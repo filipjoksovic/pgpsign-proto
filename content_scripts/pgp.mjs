@@ -1,8 +1,10 @@
 import * as openpgp from '../modules/openpgp.min.mjs';
+import { LOADED_KEY_PASSWORD_SELECTOR } from './selectors.mjs';
 
 export const PUBLIC_KEY_STORAGE_KEY = 'publicKey';
 export const PRIVATE_KEY_STORAGE_KEY = 'privateKey';
 export const PUBLIC_KEYS_STORE = 'publicKeysStore';
+export const LOADED_KEY_PASSWORD_STORE = 'loadedKeyPassword';
 
 export async function generateKeys(name, email, passphrase) {
     const { privateKey, publicKey, revocationCertificate } = await openpgp.generateKey({
@@ -18,6 +20,18 @@ export async function generateKeys(name, email, passphrase) {
         publicKey: publicKey,
         revocationCertificate: revocationCertificate,
     };
+}
+
+export async function storeLoadedKeyPassword(value) {
+    const { loadedKeyPassword } = await browser.storage.local.get(LOADED_KEY_PASSWORD_STORE);
+    if (loadedKeyPassword === value) {
+        console.error('Not saving anything, keys are same');
+    }
+    await browser.storage.local.set({ loadedKeyPassword: value });
+}
+
+export async function getLoadedKeyPassword(){
+    return await browser.storage.local.get(LOADED_KEY_PASSWORD_SELECTOR).loadedKeyPassword;
 }
 
 export async function savePubKeyToStorage(pkStr) {
@@ -51,13 +65,17 @@ export async function storeReceiverPublicKey(publicKey) {
     }
     console.log('attempting to store', publicKey);
     let { publicKeysStore } = await browser.storage.local.get(PUBLIC_KEYS_STORE);
-    console.log('PKStore:', publicKeysStore);
+    // console.log('PKStore:', publicKeysStore);
     if (!publicKeysStore) {
         publicKeysStore = [];
     }
     publicKeysStore.push(publicKey);
-    console.log(publicKeysStore);
+    // console.log(publicKeysStore);
     await browser.storage.local.set({ publicKeysStore: publicKeysStore });
+}
+
+export async function clearReceiverKeys() {
+    await browser.storage.local.set({ publicKeyStore: [] });
 }
 
 export async function getReceiverPublicKey(id = 0) {
@@ -82,4 +100,29 @@ export async function parsedPrivateKey(pkStr) {
     return parsedPrivateKey;
 }
 
+export async function encryptMessage(publicKey, privateKey, password, message) {
+    console.log(publicKey);
+    const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
+    console.log(parsedPublicKey);
+    console.log(privateKey);
+    const parsedPrivateKey = await openpgp.decryptKey({
+        privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
+        passphrase: password,
+    });
+    console.log(parsedPrivateKey);
+
+    const encrypted = await openpgp.encrypt({
+        message: await openpgp.createMessage({ text: message }),
+        encryptionKeys: parsedPublicKey,
+        signingKeys: parsedPrivateKey,
+    });
+    console.log(encrypted);
+
+    const encryptedMessage = await openpgp.readMessage({
+        armoredMessage: encrypted,
+    });
+    console.log(encryptedMessage);
+
+    return encrypted;
+}
 

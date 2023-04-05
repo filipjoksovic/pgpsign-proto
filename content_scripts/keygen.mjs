@@ -6,7 +6,7 @@ import {
     GENERATE_KEYS_BUTTON_SELECTOR,
     KEY_GEN_GROUP_SELECTOR, MAIL_CREATE_PROGRESS_SELECTOR,
     NAME_INPUT_SELECTOR, PASS_INPUT_SELECTOR,
-    MAIL_PROVIDER_CONTEXT_SELECTOR
+    MAIL_PROVIDER_CONTEXT_SELECTOR,
 } from './selectors.mjs';
 
 
@@ -51,6 +51,7 @@ function enableGenKeys() {
     document.querySelector(KEY_GEN_GROUP_SELECTOR).classList.remove('hidden');
     // document.querySelector(IMPORT_KEYS_SECTION_SELECTOR).classList.add('hidden');
 }
+
 function hideGenKeys() {
     document.querySelector(KEY_GEN_GROUP_SELECTOR).classList.add('hidden');
     // document.querySelector(IMPORT_KEYS_SECTION_SELECTOR).classList.remove('hidden');
@@ -60,6 +61,7 @@ function hideGenKeys() {
 function enableCreateKeysButton() {
     document.querySelector(GENERATE_KEYS_BUTTON_SELECTOR).classList.remove('hidden');
 }
+
 function hideCreateKeysButton() {
     document.querySelector(GENERATE_KEYS_BUTTON_SELECTOR).classList.add('hidden');
 }
@@ -89,17 +91,6 @@ async function confirmKeyGeneration() {
 }
 
 function listenForBlur() {
-    // document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
-    //     parseLoadedPassword();
-    // });
-    // document.querySelector(PRIV_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
-    //     parsePrivKey(e.target.value);
-    //     hidePrivKeyImport();
-    // });
-    // document.querySelector(PUB_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
-    //     parsePubKey(e.target.value);
-    //     hidePubKeyImport();
-    // });
     document.querySelector(KEY_GEN_GROUP_SELECTOR).addEventListener(
         'blur',
         e => {
@@ -192,6 +183,9 @@ browser.tabs
     });
 
 browser.runtime.onMessage.addListener((request, sender, sendresponse) => {
+    // if (!Object.hasOwn(request, 'dialogStatus') || !Object.hasOwn(request, 'provider')) {
+    //     return;
+    // }
     console.log('message received');
     console.log(request);
     const { dialogStatus, provider } = request;

@@ -1,3 +1,4 @@
+
 (() => {
     const MAIL_PROVIDERS = {
         GMAIL: 'GMAIL',
@@ -6,6 +7,13 @@
 
     let determineMailProvider = value => {
         if (value.includes('mail.google')) return MAIL_PROVIDERS.GMAIL;
+    };
+
+    let getMailContents = () => {
+        return document.querySelector('div[aria-label=\'Message Body\']').innerText;
+    };
+    let setMailContents = (content) => {
+        return document.querySelector('div[aria-label=\'Message Body\']').innerText = content;
     };
 
     let MAIL_PROVIDER = determineMailProvider(window.location.href);
@@ -26,4 +34,16 @@
         }
     });
     browser.runtime.sendMessage({ dialogStatus: isInProgress, provider: MAIL_PROVIDER });
+
+    browser.runtime.onMessage.addListener(event=>{
+        if(event.operation === "GET_CONTENT"){
+            console.log(getMailContents());
+            browser.runtime.sendMessage({
+                content:JSON.stringify(getMailContents())
+            })
+        }
+        if(event.operation === "SET_CONTENT"){
+            setMailContents(event.content);
+        }
+    })
 })();

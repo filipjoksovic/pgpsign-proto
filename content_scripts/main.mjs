@@ -5,7 +5,12 @@ import {
     getPrivKeyFromStorage,
     getPubKeyFromStorage,
     savePrivKeyToStorage,
-    savePubKeyToStorage, storeReceiverPublicKey, getReceiverPublicKey,
+    savePubKeyToStorage,
+    storeReceiverPublicKey,
+    getReceiverPublicKey,
+    storeLoadedKeyPassword,
+    clearReceiverKeys,
+    encryptMessage, getLoadedKeyPassword,
 } from './pgp.mjs';
 import {
     CANCEL_KEY_GENERATION_ID,
@@ -19,7 +24,7 @@ import {
     PUB_KEY_INPUT_SELECTOR, UPLOAD_PUB_KEY_ID, UPLOAD_PUB_KEY_SELECTOR,
 } from './selectors.mjs';
 
-console.log("Here");
+console.log('Here');
 console.log(await getReceiverPublicKey());
 
 async function enablePubKeyImport() {
@@ -64,9 +69,31 @@ async function listenForClicks() {
                 case 'importPrivateKey':
                     enablePrivKeyImport();
                     break;
+                case 'encryptEmail':
+                    await encryptEmail();
             }
         }
     });
+}
+
+async function encryptEmail() {
+    const privateKey = await getPrivKeyFromStorage();
+    const publicKey = await getPubKeyFromStorage();
+    const publicReceiverKey = await getReceiverPublicKey();
+    let messageContents = '';
+    const password = await getLoadedKeyPassword();
+    browser.tabs.query({
+        currentWindow: true,
+        active: true,
+    }).then(tabs => {
+        console.log(tabs);
+        for (const tab of tabs) {
+            browser.tabs.sendMessage(tab.id, { operation: 'GET_CONTENT' });
+        }
+    });
+
+    // console.log(messageContents);
+    // console.log(encryptedMessage);
 }
 
 async function parsePubKey(value) {
@@ -79,9 +106,6 @@ async function parsePrivKey(value) {
 
 
 function listenForBlur() {
-    // document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
-    //     parseLoadedPassword();
-    // });
     document.querySelector(PRIV_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
         parsePrivKey(e.target.value);
         hidePrivKeyImport();
@@ -91,58 +115,85 @@ function listenForBlur() {
         hidePubKeyImport();
     });
 
-    document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener("blur",e=>{
+    document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('blur', e => {
         storeReceiverPublicKey(e.target.value);
-    })
-
-}
-
-function listenForUpload() {
-    console.log("Setting listener");
-    console.log(document.querySelector(UPLOAD_PUB_KEY_SELECTOR));
-    document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('change', () => {
-        console.log('File uploaded');
-        const reader = new FileReader();
-        let content = '';
-        reader.onload = (e) => {
-
-            content = e.target.result;
-            console.log("Parsed content:",content);
-            storeReceiverPublicKey(content);
-
-        };
     });
+
+    document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
+        storeLoadedKeyPassword(e.target.value);
+    });
+
 }
+
 browser.tabs
     .executeScript({ file: '/content_scripts/browserActions.mjs' })
     .then(() => {
         console.log('executing');
         listenForBlur();
         listenForClicks();
+        clearReceiverKeys();
     })
     .catch(e => {
         console.log('Error occured', e);
     });
 
-browser.runtime.onMessage.addListener((request, sender, sendresponse) => {
+browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
+
+    // browser.tabs.sendMessage({operation:"GET_CONTENT"}).then((value)=>{
+    //     console.log(value);
+    // })
+    console.log(request);
     const { dialogStatus, provider } = request;
-    console.log(dialogStatus);
-    console.log(provider);
-    document.querySelector(MAIL_PROVIDER_CONTEXT_SELECTOR).innerText = `Mail provider: ${provider}`;
-    document.querySelector(
-        MAIL_CREATE_PROGRESS_SELECTOR,
-    ).innerText = `Is writing email: ${dialogStatus}`;
-    if (dialogStatus) {
-        enableAppFunctionality();
-    } else {
-        disableAppFunctionality();
+    const { content } = request;
+    if (dialogStatus && provider) {
+        console.log(dialogStatus);
+        console.log(provider);
+        document.querySelector(MAIL_PROVIDER_CONTEXT_SELECTOR).innerText = `Mail provider: ${provider}`;
+        document.querySelector(
+            MAIL_CREATE_PROGRESS_SELECTOR,
+        ).innerText = `Is writing email: ${dialogStatus}`;
+        if (dialogStatus) {
+            enableAppFunctionality();
+        } else {
+            disableAppFunctionality();
+        }
+        return;
+    }
+    if (content) {
+        console.log('here should i be');
+        const privateKey = await getPrivKeyFromStorage();
+        // console.log(privateKey);
+        const publicKey = await getPubKeyFromStorage();
+        // console.log(publicKey);
+
+        const publicReceiverKey = await getReceiverPublicKey();
+
+        // let messageContents = content;
+        //
+        // // const password = await getLoadedKeyPassword();
+        // // console.log(password);
+        //
+        // console.log(publicReceiverKey);
+        // console.log(privateKey.privateKey);
+        // console.log(messageContents);
+        try {
+            const encryptedMail = await encryptMessage(publicReceiverKey, privateKey.privateKey, 'password', content);
+
+            console.log(encryptedMail);
+            browser.tabs.query({
+                currentWindow: true,
+                active: true,
+            }).then(tabs => {
+                console.log(tabs);
+                for (const tab of tabs) {
+                    browser.tabs.sendMessage(tab.id, { operation: 'SET_CONTENT', content:encryptedMail });
+                }
+            });
+        } catch (e) {
+            console.error(e);
+        }
     }
 });
-
-function closeExtension() {
-    console.log('Closing extension');
-    window.close();
-}
 
 function enableAppFunctionality() {
     document.querySelector('body').classList.add('active');
