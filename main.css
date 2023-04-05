@@ -8,6 +8,7 @@
 
 }
 
+
 html,
 body {
     width: 500px;
@@ -23,7 +24,11 @@ body.active {
     height: 500px;
     width: 500px;
 }
-
+html.keygen,
+body.keygen {
+    height: 300px!important;
+    width: 500px !important;
+}
 .container {
     padding: 1rem;
 }
