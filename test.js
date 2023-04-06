@@ -3,3 +3,4 @@ browser.tabs.executeScript({ file: '/content_scripts/browserActions.js' }).then(
 }).catch(e => {
     console.log("Error occured", e);
 });
+//blabla
