@@ -80,6 +80,7 @@ export async function clearReceiverKeys() {
 
 export async function getReceiverPublicKey(id = 0) {
     // return await browser.storage.local.get(PUBLIC_KEYS_STORE)
+    //TODO fix bugs possible store implementation
     let { publicKeysStore } = await browser.storage.local.get(PUBLIC_KEYS_STORE);
     if (publicKeysStore) {
         return publicKeysStore[1];

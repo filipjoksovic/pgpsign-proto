@@ -24,8 +24,6 @@ import {
     PUB_KEY_INPUT_SELECTOR, UPLOAD_PUB_KEY_ID, UPLOAD_PUB_KEY_SELECTOR,
 } from './selectors.mjs';
 
-console.log('Here');
-console.log(await getReceiverPublicKey());
 
 async function enablePubKeyImport() {
     const publicKey = await getPubKeyFromStorage();
@@ -82,15 +80,17 @@ async function encryptEmail() {
     const publicReceiverKey = await getReceiverPublicKey();
     let messageContents = '';
     const password = await getLoadedKeyPassword();
-    browser.tabs.query({
-        currentWindow: true,
-        active: true,
-    }).then(tabs => {
-        console.log(tabs);
-        for (const tab of tabs) {
-            browser.tabs.sendMessage(tab.id, { operation: 'GET_CONTENT' });
-        }
-    });
+    browser.tabs
+        .query({
+            currentWindow: true,
+            active: true,
+        })
+        .then(tabs => {
+            console.log(tabs);
+            for (const tab of tabs) {
+                browser.tabs.sendMessage(tab.id, { operation: 'GET_CONTENT' });
+            }
+        });
 
     // console.log(messageContents);
     // console.log(encryptedMessage);
@@ -104,25 +104,27 @@ async function parsePrivKey(value) {
     await savePrivKeyToStorage(value);
 }
 
-
+//TODO move to keygen
 function listenForBlur() {
+    console.log(PRIV_KEY_INPUT_SELECTOR);
     document.querySelector(PRIV_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
+        console.log('Setting blur 1');
         parsePrivKey(e.target.value);
         hidePrivKeyImport();
     });
     document.querySelector(PUB_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
+        console.log('Setting blur 2');
         parsePubKey(e.target.value);
         hidePubKeyImport();
     });
-
     document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('blur', e => {
+        console.log('Setting blur 3');
         storeReceiverPublicKey(e.target.value);
     });
-
     document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
+        console.log('Setting blur 4');
         storeLoadedKeyPassword(e.target.value);
     });
-
 }
 
 browser.tabs
@@ -138,7 +140,6 @@ browser.tabs
     });
 
 browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
-
     // browser.tabs.sendMessage({operation:"GET_CONTENT"}).then((value)=>{
     //     console.log(value);
     // })
@@ -148,7 +149,9 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
     if (dialogStatus && provider) {
         console.log(dialogStatus);
         console.log(provider);
-        document.querySelector(MAIL_PROVIDER_CONTEXT_SELECTOR).innerText = `Mail provider: ${provider}`;
+        document.querySelector(
+            MAIL_PROVIDER_CONTEXT_SELECTOR,
+        ).innerText = `Mail provider: ${provider}`;
         document.querySelector(
             MAIL_CREATE_PROGRESS_SELECTOR,
         ).innerText = `Is writing email: ${dialogStatus}`;
@@ -161,6 +164,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
     }
     if (content) {
         console.log('here should i be');
+        //TODO improve key getting flow
         const privateKey = await getPrivKeyFromStorage();
         // console.log(privateKey);
         const publicKey = await getPubKeyFromStorage();
@@ -177,18 +181,32 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
         // console.log(privateKey.privateKey);
         // console.log(messageContents);
         try {
-            const encryptedMail = await encryptMessage(publicReceiverKey, privateKey.privateKey, 'password', content);
+            console.log('Public receiver', publicReceiverKey);
+            console.log('Private', privateKey);
+            console.log('Public', publicKey);
+
+            const encryptedMail = await encryptMessage(
+                publicReceiverKey,
+                privateKey.privateKey,
+                'password',
+                content,
+            );
 
             console.log(encryptedMail);
-            browser.tabs.query({
-                currentWindow: true,
-                active: true,
-            }).then(tabs => {
-                console.log(tabs);
-                for (const tab of tabs) {
-                    browser.tabs.sendMessage(tab.id, { operation: 'SET_CONTENT', content:encryptedMail });
-                }
-            });
+            browser.tabs
+                .query({
+                    currentWindow: true,
+                    active: true,
+                })
+                .then(tabs => {
+                    console.log(tabs);
+                    for (const tab of tabs) {
+                        browser.tabs.sendMessage(tab.id, {
+                            operation: 'SET_CONTENT',
+                            content: encryptedMail,
+                        });
+                    }
+                });
         } catch (e) {
             console.error(e);
         }

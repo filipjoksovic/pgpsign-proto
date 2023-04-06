@@ -3,7 +3,6 @@ export const PUB_KEY_GROUP_ID = 'pubKeyGroup';
 export const MAIL_PROVIDER_CONTEXT_ID = 'providerContext';
 export const MAIL_CREATE_PROGRESS_ID = 'createInProgress';
 export const IMPORT_KEYS_SECTION_ID = 'importSection';
-
 export const KEY_GEN_GROUP_ID = 'keyGenGroup';
 export const NAME_GROUP_ID = 'nameInputGroup';
 export const NAME_INPUT_ID = 'nameInput';
