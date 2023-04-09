@@ -127,3 +127,4 @@ export async function encryptMessage(publicKey, privateKey, password, message) {
     return encrypted;
 }
 
+
