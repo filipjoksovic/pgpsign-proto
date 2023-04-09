@@ -49,8 +49,6 @@ async function enablePubKeyImport() {
 
 async function enablePrivKeyImport() {
     const privateKey = await getPrivKeyFromStorage();
-    console.log(privateKey);
-    getPrivKeyFromStorage;
     if (privateKey) {
         document.querySelector(PRIV_KEY_INPUT_SELECTOR).innerHTML =
             privateKey[PRIVATE_KEY_STORAGE_KEY];
@@ -97,7 +95,6 @@ async function encryptEmail() {
             active: true,
         })
         .then(tabs => {
-            console.log(tabs);
             for (const tab of tabs) {
                 browser.tabs.sendMessage(tab.id, { operation: 'GET_CONTENT' });
             }
@@ -114,28 +111,21 @@ async function parsePrivKey(value) {
 
 //TODO move to keygen
 function listenForBlur() {
-    console.log(PRIV_KEY_INPUT_SELECTOR);
     document.querySelector(PRIV_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
-        console.log('Setting blur 1');
         parsePrivKey(e.target.value);
         hidePrivKeyImport();
     });
     document.querySelector(PUB_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
-        console.log('Setting blur 2');
         parsePubKey(e.target.value);
         hidePubKeyImport();
     });
     document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('blur', e => {
-        console.log('Setting blur 3');
 //        storeReceiverPublicKey(e.target.value);
     });
     document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
-        console.log('Setting blur 4');
         storeLoadedKeyPassword(e.target.value);
     });
-    console.log('HERE');
     //NEW blurs
-    console.log(RECEIVER_NAME_INPUT_SELECTOR);
     document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).addEventListener('blur', e => {
         if (Validators['RECEIVER_NAME'](e.target.value)) {
             document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add('input-valid');
@@ -169,12 +159,10 @@ function listenForBlur() {
     document.querySelector(USE_EXISTING_KEYS_SELECTOR).addEventListener('change', e => {
         const isChecked = e.target.checked;
         handleReceiverKeysSection(isChecked);
-        console.log(isChecked);
     });
 }
 
 export function handleReceiverKeysSection(selectActive) {
-    console.log(document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR));
     if (selectActive) {
         document.querySelector(ADD_NEW_RECEIVER_KEYS_SELECTOR).classList.add('hidden');
         document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR).classList.remove('hidden');
@@ -190,7 +178,6 @@ export function tryToSaveReceiverKeySet() {
     const key = document.querySelector(UPLOAD_PUB_KEY_SELECTOR).value;
 
     if (Validators['RECEIVER_NAME'](name) && Validators['RECEIVER_EMAIL'](email) && Validators['RECEIVER_KEY'](key)) {
-        console.log('Valid keyset, attempting to save');
         const keySet = {
             name: name,
             email: email,
@@ -205,13 +192,9 @@ export function tryToSaveReceiverKeySet() {
 export async function populateReceiverKeySelector() {
     const keys = await getReceiverPublicKeys();
     document.querySelector(EXISTING_KEYS_SELECTOR_SELECTOR).addEventListener('blur', e => {
-        console.log(e);
         selectedReceiverKeyId = e.target.value;
-        console.log(selectedKeyId);
     });
     keys.forEach((key, index) => {
-        console.log(key);
-        console.log(index);
         const element = document.createElement('option');
         element.setAttribute('id', index);
         element.innerText = `${key.name} (${key.email})`;
@@ -222,13 +205,9 @@ export async function populateReceiverKeySelector() {
 export async function populateKeySelector() {
     const { personalKeysStore } = await getKeySetFromStore();
     document.querySelector(KEY_SET_SELECTOR_SELECTOR).addEventListener('blur', e => {
-        console.log(e);
         selectedKeyId = e.target.value;
-        console.log(selectedKeyId);
     });
     personalKeysStore.forEach((key, index) => {
-        console.log(key);
-        console.log(index);
         const element = document.createElement('option');
         element.setAttribute('id', index);
         element.innerText = `${key.name} (${key.email})`;
@@ -262,12 +241,9 @@ browser.tabs
     });
 
 browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
-    console.log(request);
     const { dialogStatus, provider } = request;
     const { content } = request;
     if (dialogStatus && provider) {
-        console.log(dialogStatus);
-        console.log(provider);
         document.querySelector(
             MAIL_PROVIDER_CONTEXT_SELECTOR,
         ).innerText = `Mail provider: ${provider}`;
@@ -282,13 +258,10 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
         return;
     }
     if (content) {
-        console.log('here should i be');
         const personal = await getSelectedKeySet(selectedKeyId);
         const personalPrivateKey = personal.privateKey;
         const receiver = await getSelectedReceiverKeySet(selectedReceiverKeyId); //await getReceiverPublicKey();
         const receiverPublicKey = receiver.publicKey;
-        console.log('Personal', personal);
-        console.log('Receiver', receiver);
         try {
             const encryptedMail = await encryptMessage(
                 receiverPublicKey,
@@ -297,14 +270,12 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
                 content,
             );
 
-            console.log(encryptedMail);
             browser.tabs
                 .query({
                     currentWindow: true,
                     active: true,
                 })
                 .then(tabs => {
-                    console.log(tabs);
                     for (const tab of tabs) {
                         browser.tabs.sendMessage(tab.id, {
                             operation: 'SET_CONTENT',
@@ -323,7 +294,6 @@ export async function getSelectedKeySet(selectedId = 0) {
         selectedId = 0;
     }
     const { personalKeysStore } = await getKeySetFromStore();
-    console.log('Personal', personalKeysStore[selectedId]);
     return personalKeysStore[selectedId];
 }
 
@@ -332,7 +302,6 @@ export async function getSelectedReceiverKeySet(selectedId = 0) {
         selectedId = 0;
     }
     const storedReceivers = await getReceiverPublicKeys();
-    console.log('Receivers', storedReceivers);
     return storedReceivers[selectedId];
 }
 

@@ -23,15 +23,10 @@
 
     let MAIL_PROVIDER = determineMailProvider(window.location.href);
 
-    console.log(MAIL_PROVIDER);
     let isInProgress = false;
     document.querySelectorAll('span').forEach(element => {
         try {
             if (element.innerHTML.includes('New Message') || element.innerHTML.includes('Draft saved')) {
-                console.log(element.innerHTML);
-            }
-            if (element.innerHTML.includes('New Message') || element.innerHTML.includes('Draft saved')) {
-                console.log('Dialog opened');
                 isInProgress = true;
             }
         } catch (e) {

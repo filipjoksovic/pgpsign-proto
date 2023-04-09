@@ -30,7 +30,6 @@ export async function getKeySetFromStore(){
 }
 export async function saveKeySetToStore(keySet){
     let {personalKeysStore} = await getKeySetFromStore();
-    console.log(personalKeysStore);
     if(!personalKeysStore){
         personalKeysStore = [];
     }
@@ -67,7 +66,6 @@ export async function savePrivKeyToStorage(pkStr) {
     if (privateKey === pkStr) {
         console.error('Not saving anything, keys are same');
     }
-    console.log('Saving private', pkStr);
     await browser.storage.local.set({ privateKey: pkStr });
 }
 
@@ -79,14 +77,11 @@ export async function storeReceiverPublicKey(keySet) {
     if (!keySet) {
         return;
     }
-    console.log('attempting to store', keySet);
     let { publicKeysStore } = await browser.storage.local.get(PUBLIC_KEYS_STORE);
-    // console.log('PKStore:', publicKeysStore);
     if (!publicKeysStore) {
         publicKeysStore = [];
     }
     publicKeysStore.push(keySet);
-    console.log("stored");
     await browser.storage.local.set({ publicKeysStore: publicKeysStore });
 }
 
@@ -124,27 +119,20 @@ export async function parsedPrivateKey(pkStr) {
 
 export async function encryptMessage(publicKey, privateKey, password, message) {
     try{
-        console.log("Encrypt from pgp called");
         const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
-        //    console.log(parsedPublicKey);
-        //    console.log(privateKey);
         const parsedPrivateKey = await openpgp.decryptKey({
             privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
             passphrase: password,
         });
-        //    console.log(parsedPrivateKey);
 
         const encrypted = await openpgp.encrypt({
             message: await openpgp.createMessage({ text: message }),
             encryptionKeys: parsedPublicKey,
             signingKeys: parsedPrivateKey,
         });
-        //    console.log(encrypted);
-
         const encryptedMessage = await openpgp.readMessage({
             armoredMessage: encrypted,
         });
-        //    console.log(encryptedMessage);
         return encrypted;
         
     }

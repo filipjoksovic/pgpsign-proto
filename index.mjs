@@ -10,10 +10,6 @@ async function generateKeys() {
         format: 'armored' // output key format, defaults to 'armored' (other options: 'binary' or 'object')
     });
 
-    console.log(privateKey);     // '-----BEGIN PGP PRIVATE KEY BLOCK ... '
-    console.log(publicKey);      // '-----BEGIN PGP PUBLIC KEY BLOCK ... '
-    console.log(revocationCertificate); // '-----BEGIN PGP PUBLIC KEY BLOCK ... '
-
     return {
         privateKey: privateKey,
         publicKey: publicKey,
@@ -22,8 +18,6 @@ async function generateKeys() {
 }
 
 async function encrypt(publicKey, privateKey, password, message) {
-    console.log(publicKey)
-
     const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
     const parsedPrivateKey = await openpgp.decryptKey({
         privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
@@ -59,7 +53,6 @@ async function decrypt(encrypted, publicKey, privateKey) {
     // check signature validity (signed messages only)
     try {
         await signatures[0].verified; // throws on invalid signature
-        console.log('Signature is valid');
     } catch (e) {
         throw new Error('Signature could not be verified: ' + e.message);
     }
