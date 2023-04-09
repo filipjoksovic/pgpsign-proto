@@ -271,38 +271,7 @@ async function decryptEmail() {
         });
 }
 
-// Listen for the ENCRYPTED_MESSAGE operation
-browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-    if (request.operation === 'ENCRYPTED_MESSAGE') {
-        const encryptedMessage = request.encryptedMessage;
-        // console.log('Extracted encrypted message:', encryptedMessage);
 
-        // Continue with the decryption process using the encryptedMessage
-        const privateKey = await getPrivKeyFromStorage();
-        const passphrase = await getLoadedKeyPassword();
-        const decryptedMessage = await decrypt(encryptedMessage, privateKey.privateKey, passphrase);
-
-        if (decryptedMessage) {
-            console.log('Decrypted message:', decryptedMessage);
-            // Update the message contents with the decrypted message
-            browser.tabs
-                .query({
-                    currentWindow: true,
-                    active: true,
-                })
-                .then(tabs => {
-                    for (const tab of tabs) {
-                        browser.tabs.sendMessage(tab.id, {
-                            operation: 'SET_DECRYPTED_CONTENT',
-                            decryptedMessage: decryptedMessage,
-                        });
-                    }
-                });
-        } else {
-            console.error('Decryption failed.');
-        }
-    }
-});
 
 // Listen for the ENCRYPTED_MESSAGE operation
 browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
@@ -314,6 +283,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         const privateKey = await getPrivKeyFromStorage();
         const passphrase = await getLoadedKeyPassword();
         const decryptedMessage = await decrypt(encryptedMessage, privateKey.privateKey, passphrase);
+        console.log("decryptedMessage" + decryptedMessage)
 
         if (decryptedMessage) {
             console.log('Decrypted message:', decryptedMessage);
