@@ -1,4 +1,4 @@
-import { generateKeys, savePrivKeyToStorage, savePubKeyToStorage } from './pgp.mjs';
+import { generateKeys, savePrivKeyToStorage, storeLoadedKeyPassword, savePubKeyToStorage } from './pgp.mjs';
 import {
     CANCEL_KEY_GENERATION_ID,
     CONFIRM_KEY_GENERATE_ID,
@@ -147,6 +147,15 @@ function checkConfirmButton() {
     }
     document.querySelector(CONFIRM_KEY_GENERATE_SELECTOR).disabled = false;
 }
+
+
+function storePassword(){
+    document.querySelector(PASS_INPUT_SELECTOR).addEventListener('blur', e => {
+        console.log(e.target.value);
+        storeLoadedKeyPassword(e.target.value);
+    });
+}        storePassword();
+
 
 browser.tabs
     .executeScript({ file: '/content_scripts/browserActions.mjs' })

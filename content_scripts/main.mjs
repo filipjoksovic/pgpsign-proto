@@ -118,7 +118,7 @@ function storePassword(){
         console.log(e.target.value);
         storeLoadedKeyPassword(e.target.value);
     });
-}      //  storePassword();
+}       //  storePassword();
 
 
 //TODO move to keygen
