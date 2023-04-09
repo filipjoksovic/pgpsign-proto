@@ -1,83 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Document</title>
-        <link rel="stylesheet" href="../main.css" />
-    </head>
-    <body class="inactive">
-        <div class="container">
-            <h1>PgpSign</h1>
-            <p>Sign any email using PGP</p>
-        </div>
-        <div class="d-flex w-100 align-center justify-center flex-col">
-            <a href="../main.html">Go back</a>
-        </div>
-        <div class="d-flex w-100 align-center justify-center flex-col">
-            <a href="./keygen.html">Generate keys</a>
-        </div>
-        <div class="container">
-            <p id="providerContext">Detected provider:</p>
-            <p id="createInProgress">Create in progress:</p>
-        </div>
-        <div id="content-wrapper" class="hidden">
-            <div class="container" id="importSection">
-                <h3>Import personal keys</h3>
-                <span>Your personal generated keys are stored here.</span>
-                <div class="d-flex mt-2">
-                    <button id="importPublicKey" class="btn btn-primary flex-grow-1 pointer">
-                        Import public key
-                    </button>
-                    <button id="importPrivateKey" class="btn btn-primary flex-grow-1 pointer">
-                        Import private key
-                    </button>
-                </div>
-                <div class="form-group hidden mt-2" id="pubKeyGroup">
-                    <label for="publicKeyInput">Public key (Armored)</label>
-                    <textarea
-                        class="form-control mt-2 w-100 d-block"
-                        id="publicKeyInput"></textarea>
-                </div>
-                <div class="form-group hidden mt-2" id="privKeyGroup">
-                    <label for="privateKeyInput">Private key (Armored)</label>
-                    <textarea
-                        class="form-control mt-2 w-100 d-block"
-                        id="privateKeyInput"></textarea>
-                </div>
-                <div class="form-group mt-2" id="loadedKeyPasswordGroup">
-                    <label for="loadedKeyPassword">Private key password</label>
-                    <input class="form-control mt-2 w-100 d-block" id="loadedKeyPassword" />
-                </div>
-            </div>
-            <div class="container">
-                <h3>Import receiver public key</h3>
-                <p>Here you can upload the public key of the receiver</p>
-                <small>Keys get automatically saved in local storage for later use</small>
-                <div class="d-flex mt-2">
-                    <div class="form-group" id="receiverNameGroup">
-                        <label for="receiverNameInput">Receiver name</label>
-                        <input class="form-control w-100" id="receiverNameInput" />
-                    </div>
-                    <div class="form-group" id="receiverEmailGroup">
-                        <label for="receiverEmailInput">Receiver email</label>
-                        <input class="form-control w-100" id="receiverEmailInput" />
-                    </div>
-                </div>
-                <div class="d-flex flex-col mt-2">
-                    <label for="publicKeyUploadInput">Receiver public key</label>
-                    <textarea class="form-control w-100" id="publicKeyUploadInput"></textarea>
-                </div>
-            </div>
-            <div class="container">
-                <button class="btn btn-primary" id="encryptEmail">Encrypt email</button>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8' />
+    <meta http-equiv='X-UA-Compatible' content='IE=edge' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Document</title>
+    <link rel='stylesheet' href='../main.css' />
+</head>
+<body class='inactive'>
+<div class='container'>
+    <h1>PgpSign</h1>
+    <p>Sign any email using PGP</p>
+</div>
+<div class='d-flex w-100 align-center justify-center flex-col'>
+    <a href='../main.html'>Go back</a>
+</div>
+<div class='d-flex w-100 align-center justify-center flex-col'>
+    <a href='./keygen.html'>Generate keys</a>
+</div>
+<div class='container'>
+    <p id='providerContext'>Detected provider:</p>
+    <p id='createInProgress'>Create in progress:</p>
+</div>
+<div id='content-wrapper' class='hidden'>
+    <div class='container' id='importSection'>
+        <h3>Import personal keys</h3>
+        <span>Your personal generated keys are stored here.</span>
+        <!--                <div class="d-flex mt-2">-->
+        <!--                    <button id="importPublicKey" class="btn btn-primary flex-grow-1 pointer">-->
+        <!--                        Import public key-->
+        <!--                    </button>-->
+        <!--                    <button id="importPrivateKey" class="btn btn-primary flex-grow-1 pointer">-->
+        <!--                        Import private key-->
+        <!--                    </button>-->
+        <!--                </div>-->
+        <div class='d-flex mt-2'>
+            <div class='form-group'>
+                <label for='keySetSelector'>Select key pairs</label>
+                <select id='keySetSelector' class='form-control'></select>
             </div>
         </div>
-     
-        <script src="../modules/openpgp.min.mjs" type="module"></script>
-        <script src="../content_scripts/pgp.mjs" type="module"></script>
-        <script src="../content_scripts/pgp.mjs" type="module"></script>
-        <script src="../content_scripts/main.mjs" type="module"></script>
-    </body>
+        <div class='form-group hidden mt-2' id='pubKeyGroup'>
+            <label for='publicKeyInput'>Public key (Armored)</label>
+            <textarea
+                class='form-control mt-2 w-100 d-block'
+                id='publicKeyInput'></textarea>
+        </div>
+        <div class='form-group hidden mt-2' id='privKeyGroup'>
+            <label for='privateKeyInput'>Private key (Armored)</label>
+            <textarea
+                class='form-control mt-2 w-100 d-block'
+                id='privateKeyInput'></textarea>
+        </div>
+        <div class='form-group mt-2' id='loadedKeyPasswordGroup'>
+            <label for='loadedKeyPassword'>Private key password</label>
+            <input class='form-control mt-2 w-100 d-block' id='loadedKeyPassword' />
+        </div>
+    </div>
+
+    <div class='container'>
+        <!-- Rounded switch -->
+        <div class='d-flex align-center mb-2'>
+            <h3>Select existing key</h3>
+            <label class='switch'>
+                <input type='checkbox' id = "useExistingKeys">
+                <span class='slider round'></span>
+            </label>
+        </div>
+        <div id = "addNewReceiverKeys">
+        <h3>Import receiver public key</h3>
+        <p>Here you can upload the public key of the receiver</p>
+        <small>Keys get automatically saved in local storage for later use</small>
+        <div class='d-flex mt-2'>
+            <div class='form-group' id='receiverNameGroup'>
+                <label for='receiverNameInput'>Receiver name</label>
+                <input class='form-control w-100' id='receiverNameInput' />
+            </div>
+            <div class='form-group' id='receiverEmailGroup'>
+                <label for='receiverEmailInput'>Receiver email</label>
+                <input class='form-control w-100' id='receiverEmailInput' />
+            </div>
+        </div>
+        <div class='d-flex flex-col mt-2'>
+            <label for='publicKeyUploadInput'>Receiver public key</label>
+            <textarea class='form-control w-100' id='publicKeyUploadInput'></textarea>
+        </div>
+        </div>
+        <div id = "useExistingReceiverKeys" class='hidden'>
+            <h3>Select from existing stored keys</h3>
+            <select id = "existingKeysSelector" class = "form-control">
+
+            </select>
+        </div>
+    </div>
+    <div class='container'>
+        <button class='btn btn-primary' id='encryptEmail'>Encrypt email</button>
+    </div>
+</div>
+
+<script src='../modules/openpgp.min.mjs' type='module'></script>
+<script src='../content_scripts/pgp.mjs' type='module'></script>
+<script src='../content_scripts/pgp.mjs' type='module'></script>
+<script src='../content_scripts/main.mjs' type='module'></script>
+</body>
 </html>
