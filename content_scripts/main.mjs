@@ -10,7 +10,7 @@ import {
     getReceiverPublicKey,
     storeLoadedKeyPassword,
     clearReceiverKeys,
-    encryptMessage, getLoadedKeyPassword,
+    encryptMessage, getLoadedKeyPassword, getKeySetFromStore, getReceiverPublicKeys,
 } from './pgp.mjs';
 import {
     PASS_INPUT_SELECTOR,
@@ -22,13 +22,21 @@ import {
     PRIV_KEY_GROUP_SELECTOR,
     PRIV_KEY_INPUT_SELECTOR,
     PUB_KEY_GROUP_SELECTOR,
-    PUB_KEY_INPUT_SELECTOR, RECEIVER_EMAIL_GROUP_ID, UPLOAD_PUB_KEY_ID,
+    PUB_KEY_INPUT_SELECTOR,
+    RECEIVER_EMAIL_GROUP_ID,
+    UPLOAD_PUB_KEY_ID,
     RECEIVER_NAME_EMAIL_SELECTOR,
     RECEIVER_NAME_INPUT_SELECTOR,
     UPLOAD_PUB_KEY_SELECTOR,
+    KEY_SET_SELECTOR_SELECTOR,
+    USE_EXISTING_KEYS_ID,
+    USE_EXISTING_KEYS_SELECTOR,
+    ADD_NEW_RECEIVER_KEYS_SELECTOR, USE_EXISTING_RECEIVER_KEYS_SELECTOR, EXISTING_KEYS_SELECTOR_SELECTOR,
 } from './selectors.mjs';
 import { validateKeyGenInputValue, Validators } from './validators.mjs';
 
+let selectedKeyId = -1;
+let selectedReceiverKeyId = -1;
 
 async function enablePubKeyImport() {
     const publicKey = await getPubKeyFromStorage();
@@ -42,8 +50,6 @@ async function enablePubKeyImport() {
 
 async function enablePrivKeyImport() {
     const privateKey = await getPrivKeyFromStorage();
-    console.log(privateKey);
-    getPrivKeyFromStorage;
     if (privateKey) {
         document.querySelector(PRIV_KEY_INPUT_SELECTOR).innerHTML =
             privateKey[PRIVATE_KEY_STORAGE_KEY];
@@ -84,25 +90,16 @@ async function listenForClicks() {
 }
 
 async function encryptEmail() {
-    const privateKey = await getPrivKeyFromStorage();
-    const publicKey = await getPubKeyFromStorage();
-    const publicReceiverKey = await getReceiverPublicKey();
-    let messageContents = '';
-    const password = await getLoadedKeyPassword();
     browser.tabs
         .query({
             currentWindow: true,
             active: true,
         })
         .then(tabs => {
-            console.log(tabs);
             for (const tab of tabs) {
                 browser.tabs.sendMessage(tab.id, { operation: 'GET_CONTENT' });
             }
         });
-
-    // console.log(messageContents);
-    // console.log(encryptedMessage);
 }
 
 async function parsePubKey(value) {
@@ -123,20 +120,16 @@ function storePassword(){
 
 //TODO move to keygen
 function listenForBlur() {
-    console.log(PRIV_KEY_INPUT_SELECTOR);
     document.querySelector(PRIV_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
-        console.log('Setting blur 1');
         parsePrivKey(e.target.value);
         hidePrivKeyImport();
     });
     document.querySelector(PUB_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
-        console.log('Setting blur 2');
         parsePubKey(e.target.value);
         hidePubKeyImport();
     });
     document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('blur', e => {
-        console.log('Setting blur 3');
-        storeReceiverPublicKey(e.target.value);
+//        storeReceiverPublicKey(e.target.value);
     });
   //  document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
     //    console.log('Setting blur 4');
@@ -144,61 +137,124 @@ function listenForBlur() {
     //});
         console.log("HERE")
     //NEW blurs
-    console.log(RECEIVER_NAME_INPUT_SELECTOR);
     document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).addEventListener('blur', e => {
-        if(Validators['RECEIVER_NAME'](e.target.value)){
-            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add("input-valid");
-            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.remove("input-invalid");
-        }
-        else{
-            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.remove("input-valid");
-            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add("input-invalid");
+        if (Validators['RECEIVER_NAME'](e.target.value)) {
+            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add('input-valid');
+            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.remove('input-invalid');
+            tryToSaveReceiverKeySet();
+
+        } else {
+            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.remove('input-valid');
+            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add('input-invalid');
         }
     });
     document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).addEventListener('blur', e => {
-        if(Validators['RECEIVER_EMAIL'](e.target.value)){
-            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.add("input-valid");
-            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.remove("input-invalid");
-        }
-        else{
-            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.remove("input-valid");
-            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.add("input-invalid");
+        if (Validators['RECEIVER_EMAIL'](e.target.value)) {
+            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.add('input-valid');
+            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.remove('input-invalid');
+        } else {
+            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.remove('input-valid');
+            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.add('input-invalid');
         }
     });
     document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('blur', e => {
-        if(Validators['RECEIVER_KEY'](e.target.value)){
-            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.add("input-valid");
-            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.remove("input-invalid");
-        }
-        else{
-            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.remove("input-valid");
-            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.add("input-invalid");
+        if (Validators['RECEIVER_KEY'](e.target.value)) {
+            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.add('input-valid');
+            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.remove('input-invalid');
+            tryToSaveReceiverKeySet();
+        } else {
+            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.remove('input-valid');
+            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.add('input-invalid');
         }
     });
-//    console.log(RECEIVER_NAME_INPUT_SELECTOR);
-//    console.log(document.querySelector(RECEIVER_NAME_INPUT_SELECTOR));
-//    document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).addEventListener('blur', e => {});
+    document.querySelector(USE_EXISTING_KEYS_SELECTOR).addEventListener('change', e => {
+        const isChecked = e.target.checked;
+        handleReceiverKeysSection(isChecked);
+    });
+}
+
+export function handleReceiverKeysSection(selectActive) {
+    if (selectActive) {
+        document.querySelector(ADD_NEW_RECEIVER_KEYS_SELECTOR).classList.add('hidden');
+        document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR).classList.remove('hidden');
+    } else {
+        document.querySelector(ADD_NEW_RECEIVER_KEYS_SELECTOR).classList.remove('hidden');
+        document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR).classList.add('hidden');
+    }
+}
+
+export function tryToSaveReceiverKeySet() {
+    const name = document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).value;
+    const email = document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).value;
+    const key = document.querySelector(UPLOAD_PUB_KEY_SELECTOR).value;
+
+    if (Validators['RECEIVER_NAME'](name) && Validators['RECEIVER_EMAIL'](email) && Validators['RECEIVER_KEY'](key)) {
+        const keySet = {
+            name: name,
+            email: email,
+            publicKey: key,
+        };
+        storeReceiverPublicKey(keySet);
+    }
+
+
+}
+
+export async function populateReceiverKeySelector() {
+    const keys = await getReceiverPublicKeys();
+    document.querySelector(EXISTING_KEYS_SELECTOR_SELECTOR).addEventListener('blur', e => {
+        selectedReceiverKeyId = e.target.value;
+    });
+    keys.forEach((key, index) => {
+        const element = document.createElement('option');
+        element.setAttribute('id', index);
+        element.innerText = `${key.name} (${key.email})`;
+        document.querySelector(EXISTING_KEYS_SELECTOR_SELECTOR).append(element);
+    });
+}
+
+export async function populateKeySelector() {
+    const { personalKeysStore } = await getKeySetFromStore();
+    document.querySelector(KEY_SET_SELECTOR_SELECTOR).addEventListener('blur', e => {
+        selectedKeyId = e.target.value;
+    });
+    personalKeysStore.forEach((key, index) => {
+        const element = document.createElement('option');
+        element.setAttribute('id', index);
+        element.innerText = `${key.name} (${key.email})`;
+        document.querySelector(KEY_SET_SELECTOR_SELECTOR).append(element);
+    });
 }
 
 browser.tabs
     .executeScript({ file: '/content_scripts/browserActions.mjs' })
     .then(() => {
-        console.log('executing');
+        browser.tabs
+            .query({
+                currentWindow: true,
+                active: true,
+            })
+            .then(tabs => {
+                console.log("Sending message about provider");
+                for (const tab of tabs) {
+                    browser.tabs.sendMessage(tab.id, { operation: 'GET_PROVIDER' });
+                }
+            });
+        populateKeySelector();
+        populateReceiverKeySelector();
         listenForBlur();
         listenForClicks();
         clearReceiverKeys();
+
     })
     .catch(e => {
         console.log('Error occured', e);
     });
 
 browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
-    console.log(request);
     const { dialogStatus, provider } = request;
     const { content } = request;
     if (dialogStatus && provider) {
-        console.log(dialogStatus);
-        console.log(provider);
         document.querySelector(
             MAIL_PROVIDER_CONTEXT_SELECTOR,
         ).innerText = `Mail provider: ${provider}`;
@@ -213,37 +269,24 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
         return;
     }
     if (content) {
-        console.log('here should i be');
-        //TODO improve key getting flow
-        const privateKey = await getPrivKeyFromStorage();
-        // console.log(privateKey);
-        const publicKey = await getPubKeyFromStorage();
-        // console.log(publicKey);
-
-        const publicReceiverKey = await getReceiverPublicKey();
-        
-        const password = await getLoadedKeyPassword();
-
+        const personal = await getSelectedKeySet(selectedKeyId);
+        const personalPrivateKey = personal.privateKey;
+        const receiver = await getSelectedReceiverKeySet(selectedReceiverKeyId); //await getReceiverPublicKey();
+        const receiverPublicKey = receiver.publicKey;
         try {
-            console.log('Public receiver', publicReceiverKey);
-            console.log('Private', privateKey);
-            console.log('Public', publicKey);
-
             const encryptedMail = await encryptMessage(
-                publicReceiverKey,
-                privateKey.privateKey,
-                password,
+                receiverPublicKey,
+                personalPrivateKey,
+                'password',
                 content,
             );
 
-            console.log(encryptedMail);
             browser.tabs
                 .query({
                     currentWindow: true,
                     active: true,
                 })
                 .then(tabs => {
-                    console.log(tabs);
                     for (const tab of tabs) {
                         browser.tabs.sendMessage(tab.id, {
                             operation: 'SET_CONTENT',
@@ -256,6 +299,22 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
         }
     }
 });
+
+export async function getSelectedKeySet(selectedId = 0) {
+    if (selectedId < 0) {
+        selectedId = 0;
+    }
+    const { personalKeysStore } = await getKeySetFromStore();
+    return personalKeysStore[selectedId];
+}
+
+export async function getSelectedReceiverKeySet(selectedId = 0) {
+    if (selectedId < 0) {
+        selectedId = 0;
+    }
+    const storedReceivers = await getReceiverPublicKeys();
+    return storedReceivers[selectedId];
+}
 
 function enableAppFunctionality() {
     document.querySelector('body').classList.add('active');
@@ -279,7 +338,7 @@ function disableAppFunctionality() {
 //     const privateKey = await getPrivKeyFromStorage();
 //     const passphrase = await getLoadedKeyPassword();
 //     // const encryptedMessage = /* Get the encrypted message from the user */;
-    
+
 //     const decryptedMessage = await decryptMessage(encryptedMessage, privateKey.privateKey, passphrase);
 
 //     if (decryptedMessage) {

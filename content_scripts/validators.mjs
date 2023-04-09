@@ -26,7 +26,6 @@ export const Validators = {
 };
 
 export function validateKeyGenInputValue(value, type) {
-    console.log(value,type);
     if (!Object.hasOwn(Validators, type)) {
         console.error('Validator not found for validator:', type);
         return false;

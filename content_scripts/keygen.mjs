@@ -1,4 +1,4 @@
-import { generateKeys, savePrivKeyToStorage, storeLoadedKeyPassword, savePubKeyToStorage } from './pgp.mjs';
+import { generateKeys, saveKeySetToStore, savePrivKeyToStorage, storeLoadedKeyPassword, savePubKeyToStorage } from './pgp.mjs';
 import {
     CANCEL_KEY_GENERATION_ID,
     CONFIRM_KEY_GENERATE_ID,
@@ -43,6 +43,7 @@ function hideCreateKeysButton() {
     document.querySelector(GENERATE_KEYS_BUTTON_SELECTOR).classList.add('hidden');
 }
 
+
 async function confirmKeyGeneration() {
     const name = KEYGEN_DATA.nameInput;
     const email = KEYGEN_DATA.emailInput;
@@ -52,6 +53,15 @@ async function confirmKeyGeneration() {
 
     await savePrivKeyToStorage(privateKey);
     await savePubKeyToStorage(publicKey);
+
+    const keySet = {
+        name:name,
+        email:email,
+        privateKey:privateKey,
+        publicKey:publicKey
+    }
+
+    await saveKeySetToStore(keySet);
 
     const hiddenElement = document.createElement('a');
     hiddenElement.href = 'data:attachment/text,' + encodeURI(privateKey);
@@ -160,23 +170,14 @@ function storePassword(){
 browser.tabs
     .executeScript({ file: '/content_scripts/browserActions.mjs' })
     .then(() => {
-        console.log('executing');
         listenForBlur();
         listenForClicks();
     })
     .catch(e => {
-        console.log('Error occured', e);
     });
 
 browser.runtime.onMessage.addListener((request, sender, sendresponse) => {
-    // if (!Object.hasOwn(request, 'dialogStatus') || !Object.hasOwn(request, 'provider')) {
-    //     return;
-    // }
-    console.log('message received');
-    console.log(request);
     const { dialogStatus, provider } = request;
-    console.log(dialogStatus);
-    console.log(provider);
     document.querySelector(MAIL_PROVIDER_CONTEXT_SELECTOR).innerText = `Mail provider: ${provider}`;
     document.querySelector(
         MAIL_CREATE_PROGRESS_SELECTOR,
