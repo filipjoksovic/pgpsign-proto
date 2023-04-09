@@ -53,17 +53,31 @@
             </div>
             <div class="container">
                 <h3>Import receiver public key</h3>
-                <span>Here you can upload the public key of the receiver</span>
+                <p>Here you can upload the public key of the receiver</p>
+                <small>Keys get automatically saved in local storage for later use</small>
                 <div class="d-flex mt-2">
-                    <textarea class = "form-control w-100" id = "publicKeyUploadInput"></textarea>
+                    <div class="form-group" id="receiverNameGroup">
+                        <label for="receiverNameInput">Receiver name</label>
+                        <input class="form-control w-100" id="receiverNameInput" />
+                    </div>
+                    <div class="form-group" id="receiverEmailGroup">
+                        <label for="receiverEmailInput">Receiver email</label>
+                        <input class="form-control w-100" id="receiverEmailInput" />
+                    </div>
+                </div>
+                <div class="d-flex flex-col mt-2">
+                    <label for="publicKeyUploadInput">Receiver public key</label>
+                    <textarea class="form-control w-100" id="publicKeyUploadInput"></textarea>
                 </div>
             </div>
-            <button class = "btn btn-primary" id = "encryptEmail">Encrypt email</button>
+            <div class="container">
+                <button class="btn btn-primary" id="encryptEmail">Encrypt email</button>
+            </div>
         </div>
      
         <script src="../modules/openpgp.min.mjs" type="module"></script>
         <script src="../content_scripts/pgp.mjs" type="module"></script>
         <script src="../content_scripts/pgp.mjs" type="module"></script>
-        <script src='../content_scripts/main.mjs' type='module'></script>
+        <script src="../content_scripts/main.mjs" type="module"></script>
     </body>
 </html>
