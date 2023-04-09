@@ -1,5 +1,10 @@
-
 (() => {
+
+    if (window.hasRun) {
+        return;
+    }
+    window.hasRun = true;
+
     const MAIL_PROVIDERS = {
         GMAIL: 'GMAIL',
         OUTLOOK: 'OUTLOOK',
@@ -22,10 +27,10 @@
     let isInProgress = false;
     document.querySelectorAll('span').forEach(element => {
         try {
-            if (element.innerHTML.includes('New Message')) {
+            if (element.innerHTML.includes('New Message') || element.innerHTML.includes('Draft saved')) {
                 console.log(element.innerHTML);
             }
-            if (element.innerHTML.includes('New Message')) {
+            if (element.innerHTML.includes('New Message') || element.innerHTML.includes('Draft saved')) {
                 console.log('Dialog opened');
                 isInProgress = true;
             }
@@ -33,17 +38,22 @@
             console.log('error while parsing. Skipping this element.');
         }
     });
+
+
     browser.runtime.sendMessage({ dialogStatus: isInProgress, provider: MAIL_PROVIDER });
 
-    browser.runtime.onMessage.addListener(event=>{
-        if(event.operation === "GET_CONTENT"){
+    browser.runtime.onMessage.addListener(event => {
+        if (event.operation === 'GET_CONTENT') {
             console.log(getMailContents());
             browser.runtime.sendMessage({
-                content:JSON.stringify(getMailContents())
-            })
+                content: JSON.stringify(getMailContents()),
+            });
         }
-        if(event.operation === "SET_CONTENT"){
+        if (event.operation === 'SET_CONTENT') {
             setMailContents(event.content);
         }
-    })
+        if (event.operation === 'GET_PROVIDER') {
+            browser.runtime.sendMessage({ dialogStatus: isInProgress, provider: MAIL_PROVIDER });
+        }
+    });
 })();

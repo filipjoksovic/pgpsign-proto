@@ -123,29 +123,35 @@ export async function parsedPrivateKey(pkStr) {
 }
 
 export async function encryptMessage(publicKey, privateKey, password, message) {
-    console.log("Encrypt from pgp called");
-    const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
-//    console.log(parsedPublicKey);
-//    console.log(privateKey);
-    const parsedPrivateKey = await openpgp.decryptKey({
-        privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
-        passphrase: password,
-    });
-//    console.log(parsedPrivateKey);
+    try{
+        console.log("Encrypt from pgp called");
+        const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
+        //    console.log(parsedPublicKey);
+        //    console.log(privateKey);
+        const parsedPrivateKey = await openpgp.decryptKey({
+            privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
+            passphrase: password,
+        });
+        //    console.log(parsedPrivateKey);
 
-    const encrypted = await openpgp.encrypt({
-        message: await openpgp.createMessage({ text: message }),
-        encryptionKeys: parsedPublicKey,
-        signingKeys: parsedPrivateKey,
-    });
-//    console.log(encrypted);
+        const encrypted = await openpgp.encrypt({
+            message: await openpgp.createMessage({ text: message }),
+            encryptionKeys: parsedPublicKey,
+            signingKeys: parsedPrivateKey,
+        });
+        //    console.log(encrypted);
 
-    const encryptedMessage = await openpgp.readMessage({
-        armoredMessage: encrypted,
-    });
-//    console.log(encryptedMessage);
+        const encryptedMessage = await openpgp.readMessage({
+            armoredMessage: encrypted,
+        });
+        //    console.log(encryptedMessage);
+        return encrypted;
+        
+    }
+    catch (e){
+        console.error(e);
+    }
 
-    return encrypted;
 }
 
 //nesto

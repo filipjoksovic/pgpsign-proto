@@ -91,12 +91,6 @@ async function listenForClicks() {
 }
 
 async function encryptEmail() {
-    //TODO update logic for getting keys out of select elements/manual input
-    const privateKey = await getPrivKeyFromStorage();
-    const publicKey = await getPubKeyFromStorage();
-    const publicReceiverKey = await getReceiverPublicKey();
-    let messageContents = '';
-    const password = await getLoadedKeyPassword();
     browser.tabs
         .query({
             currentWindow: true,
@@ -108,9 +102,6 @@ async function encryptEmail() {
                 browser.tabs.sendMessage(tab.id, { operation: 'GET_CONTENT' });
             }
         });
-
-    // console.log(messageContents);
-    // console.log(encryptedMessage);
 }
 
 async function parsePubKey(value) {
@@ -175,46 +166,43 @@ function listenForBlur() {
             document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.add('input-invalid');
         }
     });
-    document.querySelector(USE_EXISTING_KEYS_SELECTOR).addEventListener("change",e=>{
+    document.querySelector(USE_EXISTING_KEYS_SELECTOR).addEventListener('change', e => {
         const isChecked = e.target.checked;
         handleReceiverKeysSection(isChecked);
         console.log(isChecked);
-    })
+    });
 }
 
-export function handleReceiverKeysSection(selectActive){
+export function handleReceiverKeysSection(selectActive) {
     console.log(document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR));
-    if(selectActive){
-        document.querySelector(ADD_NEW_RECEIVER_KEYS_SELECTOR).classList.add("hidden");
-        document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR).classList.remove("hidden");
-    }
-    else{
-        document.querySelector(ADD_NEW_RECEIVER_KEYS_SELECTOR).classList.remove("hidden");
-        document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR).classList.add("hidden");
+    if (selectActive) {
+        document.querySelector(ADD_NEW_RECEIVER_KEYS_SELECTOR).classList.add('hidden');
+        document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR).classList.remove('hidden');
+    } else {
+        document.querySelector(ADD_NEW_RECEIVER_KEYS_SELECTOR).classList.remove('hidden');
+        document.querySelector(USE_EXISTING_RECEIVER_KEYS_SELECTOR).classList.add('hidden');
     }
 }
 
-export function tryToSaveReceiverKeySet(){
+export function tryToSaveReceiverKeySet() {
     const name = document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).value;
     const email = document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).value;
     const key = document.querySelector(UPLOAD_PUB_KEY_SELECTOR).value;
 
-    if(Validators["RECEIVER_NAME"](name) && Validators["RECEIVER_EMAIL"](email) && Validators["RECEIVER_KEY"](key)){
-       console.log("Valid keyset, attempting to save");
+    if (Validators['RECEIVER_NAME'](name) && Validators['RECEIVER_EMAIL'](email) && Validators['RECEIVER_KEY'](key)) {
+        console.log('Valid keyset, attempting to save');
         const keySet = {
             name: name,
             email: email,
-            publicKey:key
-        }
+            publicKey: key,
+        };
         storeReceiverPublicKey(keySet);
     }
 
 
-
-
 }
 
-export async function populateReceiverKeySelector(){
+export async function populateReceiverKeySelector() {
     const keys = await getReceiverPublicKeys();
     document.querySelector(EXISTING_KEYS_SELECTOR_SELECTOR).addEventListener('blur', e => {
         console.log(e);
@@ -251,11 +239,23 @@ export async function populateKeySelector() {
 browser.tabs
     .executeScript({ file: '/content_scripts/browserActions.mjs' })
     .then(() => {
+        browser.tabs
+            .query({
+                currentWindow: true,
+                active: true,
+            })
+            .then(tabs => {
+                console.log("Sending message about provider");
+                for (const tab of tabs) {
+                    browser.tabs.sendMessage(tab.id, { operation: 'GET_PROVIDER' });
+                }
+            });
         populateKeySelector();
         populateReceiverKeySelector();
         listenForBlur();
         listenForClicks();
         clearReceiverKeys();
+
     })
     .catch(e => {
         console.log('Error occured', e);
@@ -283,14 +283,16 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
     }
     if (content) {
         console.log('here should i be');
-        const privateKey = await getPrivKeyFromStorage();
-        const publicKey = await getPubKeyFromStorage();
-        const publicReceiverKey = await getReceiverPublicKey();
-
+        const personal = await getSelectedKeySet(selectedKeyId);
+        const personalPrivateKey = personal.privateKey;
+        const receiver = await getSelectedReceiverKeySet(selectedReceiverKeyId); //await getReceiverPublicKey();
+        const receiverPublicKey = receiver.publicKey;
+        console.log('Personal', personal);
+        console.log('Receiver', receiver);
         try {
             const encryptedMail = await encryptMessage(
-                publicReceiverKey,
-                privateKey.privateKey,
+                receiverPublicKey,
+                personalPrivateKey,
                 'password',
                 content,
             );
@@ -315,6 +317,24 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
         }
     }
 });
+
+export async function getSelectedKeySet(selectedId = 0) {
+    if (selectedId < 0) {
+        selectedId = 0;
+    }
+    const { personalKeysStore } = await getKeySetFromStore();
+    console.log('Personal', personalKeysStore[selectedId]);
+    return personalKeysStore[selectedId];
+}
+
+export async function getSelectedReceiverKeySet(selectedId = 0) {
+    if (selectedId < 0) {
+        selectedId = 0;
+    }
+    const storedReceivers = await getReceiverPublicKeys();
+    console.log('Receivers', storedReceivers);
+    return storedReceivers[selectedId];
+}
 
 function enableAppFunctionality() {
     document.querySelector('body').classList.add('active');
