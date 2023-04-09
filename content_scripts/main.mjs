@@ -13,6 +13,7 @@ import {
     encryptMessage, getLoadedKeyPassword, getKeySetFromStore, getReceiverPublicKeys,
 } from './pgp.mjs';
 import {
+    PASS_INPUT_SELECTOR,
     CANCEL_KEY_GENERATION_ID,
     CONFIRM_KEY_GENERATE_ID,
     LOADED_KEY_PASSWORD_SELECTOR,
@@ -109,6 +110,14 @@ async function parsePrivKey(value) {
     await savePrivKeyToStorage(value);
 }
 
+function storePassword(){
+    document.querySelector(PASS_INPUT_SELECTOR).addEventListener('blur', e => {
+        console.log(e.target.value);
+        storeLoadedKeyPassword(e.target.value);
+    });
+}       //  storePassword();
+
+
 //TODO move to keygen
 function listenForBlur() {
     document.querySelector(PRIV_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
@@ -122,9 +131,11 @@ function listenForBlur() {
     document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('blur', e => {
 //        storeReceiverPublicKey(e.target.value);
     });
-    document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
-        storeLoadedKeyPassword(e.target.value);
-    });
+  //  document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
+    //    console.log('Setting blur 4');
+    //    storeLoadedKeyPassword(e.target.value);
+    //});
+        console.log("HERE")
     //NEW blurs
     document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).addEventListener('blur', e => {
         if (Validators['RECEIVER_NAME'](e.target.value)) {
@@ -262,11 +273,12 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
         const personalPrivateKey = personal.privateKey;
         const receiver = await getSelectedReceiverKeySet(selectedReceiverKeyId); //await getReceiverPublicKey();
         const receiverPublicKey = receiver.publicKey;
+        const password = getLoadedKeyPassword(); 
         try {
             const encryptedMail = await encryptMessage(
                 receiverPublicKey,
                 personalPrivateKey,
-                'password',
+                password,
                 content,
             );
 
