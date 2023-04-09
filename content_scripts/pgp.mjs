@@ -1,5 +1,5 @@
 import * as openpgp from '../modules/openpgp.min.mjs';
-import { LOADED_KEY_PASSWORD_SELECTOR } from './selectors.mjs';
+import { PASS_INPUT_SELECTOR } from './selectors.mjs';
 
 export const PUBLIC_KEY_STORAGE_KEY = 'publicKey';
 export const PRIVATE_KEY_STORAGE_KEY = 'privateKey';
@@ -23,15 +23,16 @@ export async function generateKeys(name, email, passphrase) {
 }
 
 export async function storeLoadedKeyPassword(value) {
-    const { loadedKeyPassword } = await browser.storage.local.get(LOADED_KEY_PASSWORD_STORE);
-    if (loadedKeyPassword === value) {
+    const { inputPassword } = await browser.storage.local.get(LOADED_KEY_PASSWORD_STORE);
+    if (inputPassword === value) {
         console.error('Not saving anything, keys are same');
     }
-    await browser.storage.local.set({ loadedKeyPassword: value });
+    await browser.storage.local.set({ inputPassword: value });
 }
 
 export async function getLoadedKeyPassword(){
-    return await browser.storage.local.get(LOADED_KEY_PASSWORD_SELECTOR).loadedKeyPassword;
+    const { inputPassword } = await browser.storage.local.get('inputPassword');
+    return inputPassword;
 }
 
 export async function savePubKeyToStorage(pkStr) {
@@ -126,4 +127,4 @@ export async function encryptMessage(publicKey, privateKey, password, message) {
 
     return encrypted;
 }
-//nesto
+
