@@ -1,3 +1,4 @@
+import * as openpgp from '../modules/openpgp.min.mjs';
 import {
     PRIVATE_KEY_STORAGE_KEY,
     PUBLIC_KEY_STORAGE_KEY,
@@ -10,7 +11,7 @@ import {
     getReceiverPublicKey,
     storeLoadedKeyPassword,
     clearReceiverKeys,
-    encryptMessage, getLoadedKeyPassword,
+    encryptMessage, getLoadedKeyPassword
 } from './pgp.mjs';
 import {
     CANCEL_KEY_GENERATION_ID,
@@ -147,7 +148,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
     // browser.tabs.sendMessage({operation:"GET_CONTENT"}).then((value)=>{
     //     console.log(value);
     // })
-    console.log(request);
+    // console.log(request);
     const { dialogStatus, provider } = request;
     const { content } = request;
     if (dialogStatus && provider) {
@@ -234,21 +235,128 @@ function disableAppFunctionality() {
 }
 
 
-// //PART FOR DECR
-// async function decryptEmail() {
-//     const privateKey = await getPrivKeyFromStorage();
-//     const passphrase = await getLoadedKeyPassword();
-//     // const encryptedMessage = /* Get the encrypted message from the user */;
-    
-//     const decryptedMessage = await decryptMessage(encryptedMessage, privateKey.privateKey, passphrase);
+//PART FOR DECR
+async function decrypt(encrypted, privateKey, passphrase) {
+    const message = await openpgp.readMessage({
+        armoredMessage: encrypted // parse armored message
+    });
 
-//     if (decryptedMessage) {
-//         console.log('Decrypted message:', decryptedMessage);
-//         // Update the message contents with the decrypted message
-//     } else {
-//         console.error('Decryption failed.');
+    const { data: decrypted } = await openpgp.decrypt({
+        message,
+        decryptionKeys: await openpgp.decryptKey({ privateKey: await openpgp.readKey({ armoredKey: privateKey }), passphrase: passphrase })
+    });
+
+    return decrypted;
+}
+
+
+
+
+async function decryptEmail() {
+    const privateKey = await getPrivKeyFromStorage();
+    const passphrase = await getLoadedKeyPassword();
+
+    // Get the encrypted message from the content script
+    browser.tabs
+        .query({
+            currentWindow: true,
+            active: true,
+        })
+        .then(tabs => {
+            for (const tab of tabs) {
+                browser.tabs.sendMessage(tab.id, {
+                    operation: 'GET_ENCRYPTED_MESSAGE',
+                });
+            }
+        });
+}
+
+// Listen for the ENCRYPTED_MESSAGE operation
+browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    if (request.operation === 'ENCRYPTED_MESSAGE') {
+        const encryptedMessage = request.encryptedMessage;
+        // console.log('Extracted encrypted message:', encryptedMessage);
+
+        // Continue with the decryption process using the encryptedMessage
+        const privateKey = await getPrivKeyFromStorage();
+        const passphrase = await getLoadedKeyPassword();
+        const decryptedMessage = await decrypt(encryptedMessage, privateKey.privateKey, passphrase);
+
+        if (decryptedMessage) {
+            console.log('Decrypted message:', decryptedMessage);
+            // Update the message contents with the decrypted message
+            browser.tabs
+                .query({
+                    currentWindow: true,
+                    active: true,
+                })
+                .then(tabs => {
+                    for (const tab of tabs) {
+                        browser.tabs.sendMessage(tab.id, {
+                            operation: 'SET_DECRYPTED_CONTENT',
+                            decryptedMessage: decryptedMessage,
+                        });
+                    }
+                });
+        } else {
+            console.error('Decryption failed.');
+        }
+    }
+});
+
+// Listen for the ENCRYPTED_MESSAGE operation
+browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    if (request.operation === 'ENCRYPTED_MESSAGE') {
+        const encryptedMessage = request.encryptedMessage;
+        console.log('Extracted encrypted message:', encryptedMessage);
+
+        // Continue with the decryption process using the encryptedMessage
+        const privateKey = await getPrivKeyFromStorage();
+        const passphrase = await getLoadedKeyPassword();
+        const decryptedMessage = await decrypt(encryptedMessage, privateKey.privateKey, passphrase);
+
+        if (decryptedMessage) {
+            console.log('Decrypted message:', decryptedMessage);
+            // Update the message contents with the decrypted message
+            browser.tabs
+                .query({
+                    currentWindow: true,
+                    active: true,
+                })
+                .then(tabs => {
+                    for (const tab of tabs) {
+                        browser.tabs.sendMessage(tab.id, {
+                            operation: 'SET_DECRYPTED_CONTENT',
+                            decryptedMessage: decryptedMessage,
+                        });
+                    }
+                });
+        } else {
+            console.error('Decryption failed.');
+        }
+    }
+});
+
+
+// function getMailContents() {
+//     const mailContents = document.querySelectorAll("div[dir='ltr']");
+
+//     for (const div of mailContents) {
+//         if (div.innerHTML.includes("BEGIN PGP MESSAGE")) {
+//             console.log(div.innerText);
+//             return div.innerText;
+//         }
 //     }
+
+//     return null;
+    
+    
 // }
+
+
+
+
+
 
 
 

@@ -126,4 +126,11 @@ export async function encryptMessage(publicKey, privateKey, password, message) {
 
     return encrypted;
 }
+
+
+
+//PART FOR DECRYPTION
+
+
+
 //nesto

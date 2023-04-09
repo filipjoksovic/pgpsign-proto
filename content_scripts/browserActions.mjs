@@ -4,6 +4,34 @@
         GMAIL: 'GMAIL',
         OUTLOOK: 'OUTLOOK',
     };
+    let getMailContentsForDecrypt = () => {
+        const mailContents = document.querySelectorAll("div[dir='ltr']");
+        const regex = /-----BEGIN PGP MESSAGE-----[\s\S]*?-----END PGP MESSAGE-----/;
+
+        for (const div of mailContents) {
+            const match = div.innerText.match(regex);
+            if (match) {
+                const pgpMessage = match[0];
+                const withoutQuotes = pgpMessage.replace(/^"|"$/g, '');
+                return withoutQuotes;
+            }
+        }
+
+        return null;
+    };
+
+    let setDecryptedContent = (decryptedMessage) => {
+        const mailContents = document.querySelectorAll("div[dir='ltr']");
+        const regex = /-----BEGIN PGP MESSAGE-----[\s\S]*?-----END PGP MESSAGE-----/;
+
+        for (const div of mailContents) {
+            const match = div.innerText.match(regex);
+            if (match) {
+                div.innerText = decryptedMessage;
+                break;
+            }
+        }
+    };
 
     let determineMailProvider = value => {
         if (value.includes('mail.google')) return MAIL_PROVIDERS.GMAIL;
@@ -45,5 +73,15 @@
         if(event.operation === "SET_CONTENT"){
             setMailContents(event.content);
         }
+         if (event.operation === 'GET_ENCRYPTED_MESSAGE') {
+            const encryptedMessage = getMailContentsForDecrypt();
+            browser.runtime.sendMessage({
+                operation: 'ENCRYPTED_MESSAGE',
+                encryptedMessage: encryptedMessage,
+            });
+        }
+    if (event.operation === 'SET_DECRYPTED_CONTENT') {  
+        setDecryptedContent(event.decryptedMessage);
+    }
     })
 })();
