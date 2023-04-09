@@ -21,14 +21,18 @@ import {
     PRIV_KEY_GROUP_SELECTOR,
     PRIV_KEY_INPUT_SELECTOR,
     PUB_KEY_GROUP_SELECTOR,
-    PUB_KEY_INPUT_SELECTOR, UPLOAD_PUB_KEY_ID, UPLOAD_PUB_KEY_SELECTOR,
+    PUB_KEY_INPUT_SELECTOR, RECEIVER_EMAIL_GROUP_ID, UPLOAD_PUB_KEY_ID,
+    RECEIVER_NAME_EMAIL_SELECTOR,
+    RECEIVER_NAME_INPUT_SELECTOR,
+    UPLOAD_PUB_KEY_SELECTOR,
 } from './selectors.mjs';
+import { validateKeyGenInputValue, Validators } from './validators.mjs';
 
 
 async function enablePubKeyImport() {
     const publicKey = await getPubKeyFromStorage();
     if (publicKey) {
-        document.querySelector(PUB_KEY_INPUT_SELECTOR).innerText =
+        document.querySelector(PUB_KEY_INPUT_SELECTOR).innerHTML =
             publicKey[PUBLIC_KEY_STORAGE_KEY];
     }
     document.querySelector(PUB_KEY_GROUP_SELECTOR).classList.remove('hidden');
@@ -40,7 +44,7 @@ async function enablePrivKeyImport() {
     console.log(privateKey);
     getPrivKeyFromStorage;
     if (privateKey) {
-        document.querySelector(PRIV_KEY_INPUT_SELECTOR).innerText =
+        document.querySelector(PRIV_KEY_INPUT_SELECTOR).innerHTML =
             privateKey[PRIVATE_KEY_STORAGE_KEY];
     }
     document.querySelector(PRIV_KEY_GROUP_SELECTOR).classList.remove('hidden');
@@ -69,6 +73,10 @@ async function listenForClicks() {
                     break;
                 case 'encryptEmail':
                     await encryptEmail();
+                    break;
+                case 'decryptEmail':
+                    await decryptEmail(); // nzm dal je dobro
+                    break;
             }
         }
     });
@@ -125,6 +133,42 @@ function listenForBlur() {
         console.log('Setting blur 4');
         storeLoadedKeyPassword(e.target.value);
     });
+        console.log("HERE")
+    //NEW blurs
+    console.log(RECEIVER_NAME_INPUT_SELECTOR);
+    document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).addEventListener('blur', e => {
+        if(Validators['RECEIVER_NAME'](e.target.value)){
+            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add("input-valid");
+            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.remove("input-invalid");
+        }
+        else{
+            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.remove("input-valid");
+            document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add("input-invalid");
+        }
+    });
+    document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).addEventListener('blur', e => {
+        if(Validators['RECEIVER_EMAIL'](e.target.value)){
+            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.add("input-valid");
+            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.remove("input-invalid");
+        }
+        else{
+            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.remove("input-valid");
+            document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).classList.add("input-invalid");
+        }
+    });
+    document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('blur', e => {
+        if(Validators['RECEIVER_KEY'](e.target.value)){
+            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.add("input-valid");
+            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.remove("input-invalid");
+        }
+        else{
+            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.remove("input-valid");
+            document.querySelector(UPLOAD_PUB_KEY_SELECTOR).classList.add("input-invalid");
+        }
+    });
+//    console.log(RECEIVER_NAME_INPUT_SELECTOR);
+//    console.log(document.querySelector(RECEIVER_NAME_INPUT_SELECTOR));
+//    document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).addEventListener('blur', e => {});
 }
 
 browser.tabs
@@ -140,9 +184,6 @@ browser.tabs
     });
 
 browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
-    // browser.tabs.sendMessage({operation:"GET_CONTENT"}).then((value)=>{
-    //     console.log(value);
-    // })
     console.log(request);
     const { dialogStatus, provider } = request;
     const { content } = request;
@@ -172,14 +213,6 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
 
         const publicReceiverKey = await getReceiverPublicKey();
 
-        // let messageContents = content;
-        //
-        // // const password = await getLoadedKeyPassword();
-        // // console.log(password);
-        //
-        // console.log(publicReceiverKey);
-        // console.log(privateKey.privateKey);
-        // console.log(messageContents);
         try {
             console.log('Public receiver', publicReceiverKey);
             console.log('Private', privateKey);
@@ -228,3 +261,23 @@ function disableAppFunctionality() {
     document.querySelector('html').classList.add('inactive');
     document.querySelector('#content-wrapper').classList.add('hidden');
 }
+
+
+// //PART FOR DECR
+// async function decryptEmail() {
+//     const privateKey = await getPrivKeyFromStorage();
+//     const passphrase = await getLoadedKeyPassword();
+//     // const encryptedMessage = /* Get the encrypted message from the user */;
+    
+//     const decryptedMessage = await decryptMessage(encryptedMessage, privateKey.privateKey, passphrase);
+
+//     if (decryptedMessage) {
+//         console.log('Decrypted message:', decryptedMessage);
+//         // Update the message contents with the decrypted message
+//     } else {
+//         console.error('Decryption failed.');
+//     }
+// }
+
+
+
