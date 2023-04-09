@@ -273,11 +273,12 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
         const personalPrivateKey = personal.privateKey;
         const receiver = await getSelectedReceiverKeySet(selectedReceiverKeyId); //await getReceiverPublicKey();
         const receiverPublicKey = receiver.publicKey;
+        const password = getLoadedKeyPassword(); 
         try {
             const encryptedMail = await encryptMessage(
                 receiverPublicKey,
                 personalPrivateKey,
-                'password',
+                password,
                 content,
             );
 
