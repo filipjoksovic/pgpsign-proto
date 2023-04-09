@@ -32,7 +32,7 @@ import { validateKeyGenInputValue, Validators } from './validators.mjs';
 async function enablePubKeyImport() {
     const publicKey = await getPubKeyFromStorage();
     if (publicKey) {
-        document.querySelector(PUB_KEY_INPUT_SELECTOR).innerText =
+        document.querySelector(PUB_KEY_INPUT_SELECTOR).innerHTML =
             publicKey[PUBLIC_KEY_STORAGE_KEY];
     }
     document.querySelector(PUB_KEY_GROUP_SELECTOR).classList.remove('hidden');
@@ -44,7 +44,7 @@ async function enablePrivKeyImport() {
     console.log(privateKey);
     getPrivKeyFromStorage;
     if (privateKey) {
-        document.querySelector(PRIV_KEY_INPUT_SELECTOR).innerText =
+        document.querySelector(PRIV_KEY_INPUT_SELECTOR).innerHTML =
             privateKey[PRIVATE_KEY_STORAGE_KEY];
     }
     document.querySelector(PRIV_KEY_GROUP_SELECTOR).classList.remove('hidden');
@@ -73,6 +73,10 @@ async function listenForClicks() {
                     break;
                 case 'encryptEmail':
                     await encryptEmail();
+                    break;
+                case 'decryptEmail':
+                    await decryptEmail(); // nzm dal je dobro
+                    break;
             }
         }
     });
@@ -257,3 +261,23 @@ function disableAppFunctionality() {
     document.querySelector('html').classList.add('inactive');
     document.querySelector('#content-wrapper').classList.add('hidden');
 }
+
+
+// //PART FOR DECR
+// async function decryptEmail() {
+//     const privateKey = await getPrivKeyFromStorage();
+//     const passphrase = await getLoadedKeyPassword();
+//     // const encryptedMessage = /* Get the encrypted message from the user */;
+    
+//     const decryptedMessage = await decryptMessage(encryptedMessage, privateKey.privateKey, passphrase);
+
+//     if (decryptedMessage) {
+//         console.log('Decrypted message:', decryptedMessage);
+//         // Update the message contents with the decrypted message
+//     } else {
+//         console.error('Decryption failed.');
+//     }
+// }
+
+
+
