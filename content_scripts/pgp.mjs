@@ -6,6 +6,9 @@ export const PRIVATE_KEY_STORAGE_KEY = 'privateKey';
 export const PUBLIC_KEYS_STORE = 'publicKeysStore';
 export const LOADED_KEY_PASSWORD_STORE = 'loadedKeyPassword';
 
+export const PERSONAL_KEYS_STORE = "personalKeysStore";
+
+
 export async function generateKeys(name, email, passphrase) {
     const { privateKey, publicKey, revocationCertificate } = await openpgp.generateKey({
         type: 'ecc',
@@ -20,6 +23,18 @@ export async function generateKeys(name, email, passphrase) {
         publicKey: publicKey,
         revocationCertificate: revocationCertificate,
     };
+}
+
+export async function getKeySetFromStore(){
+    return await browser.storage.local.get(PERSONAL_KEYS_STORE);
+}
+export async function saveKeySetToStore(keySet){
+    let {personalKeysStore} = await getKeySetFromStore();
+    if(!personalKeysStore){
+        personalKeysStore = [];
+    }
+    personalKeysStore.push(keySet);
+    await browser.storage.local.set({personalKeysStore:personalKeysStore});
 }
 
 export async function storeLoadedKeyPassword(value) {
@@ -51,7 +66,6 @@ export async function savePrivKeyToStorage(pkStr) {
     if (privateKey === pkStr) {
         console.error('Not saving anything, keys are same');
     }
-    console.log('Saving private', pkStr);
     await browser.storage.local.set({ privateKey: pkStr });
 }
 
@@ -59,18 +73,15 @@ export async function getPrivKeyFromStorage() {
     return await browser.storage.local.get(PRIVATE_KEY_STORAGE_KEY);
 }
 
-export async function storeReceiverPublicKey(publicKey) {
-    if (publicKey === '') {
+export async function storeReceiverPublicKey(keySet) {
+    if (!keySet) {
         return;
     }
-    console.log('attempting to store', publicKey);
     let { publicKeysStore } = await browser.storage.local.get(PUBLIC_KEYS_STORE);
-    // console.log('PKStore:', publicKeysStore);
     if (!publicKeysStore) {
         publicKeysStore = [];
     }
-    publicKeysStore.push(publicKey);
-    // console.log(publicKeysStore);
+    publicKeysStore.push(keySet);
     await browser.storage.local.set({ publicKeysStore: publicKeysStore });
 }
 
@@ -87,6 +98,11 @@ export async function getReceiverPublicKey(id = 0) {
     }
     return null;
 }
+export async function getReceiverPublicKeys(){
+    const {publicKeysStore} = await browser.storage.local.get(PUBLIC_KEYS_STORE);
+
+    return publicKeysStore;
+}
 
 export async function parsePublicKey(pkStr) {
     const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
@@ -102,35 +118,28 @@ export async function parsedPrivateKey(pkStr) {
 }
 
 export async function encryptMessage(publicKey, privateKey, password, message) {
-    console.log(publicKey);
-    const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
-    console.log(parsedPublicKey);
-    console.log(privateKey);
-    const parsedPrivateKey = await openpgp.decryptKey({
-        privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
-        passphrase: password,
-    });
-    console.log(parsedPrivateKey);
+    try{
+        const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
+        const parsedPrivateKey = await openpgp.decryptKey({
+            privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
+            passphrase: password,
+        });
 
-    const encrypted = await openpgp.encrypt({
-        message: await openpgp.createMessage({ text: message }),
-        encryptionKeys: parsedPublicKey,
-        signingKeys: parsedPrivateKey,
-    });
-    console.log(encrypted);
+        const encrypted = await openpgp.encrypt({
+            message: await openpgp.createMessage({ text: message }),
+            encryptionKeys: parsedPublicKey,
+            signingKeys: parsedPrivateKey,
+        });
+        const encryptedMessage = await openpgp.readMessage({
+            armoredMessage: encrypted,
+        });
+        return encrypted;
+        
+    }
+    catch (e){
+        console.error(e);
+    }
 
-    const encryptedMessage = await openpgp.readMessage({
-        armoredMessage: encrypted,
-    });
-    console.log(encryptedMessage);
-
-    return encrypted;
 }
 
 
-
-//PART FOR DECRYPTION
-
-
-
-//nesto

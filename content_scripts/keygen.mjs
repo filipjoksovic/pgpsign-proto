@@ -1,4 +1,4 @@
-import { generateKeys, savePrivKeyToStorage, savePubKeyToStorage } from './pgp.mjs';
+import { generateKeys, saveKeySetToStore, savePrivKeyToStorage, savePubKeyToStorage } from './pgp.mjs';
 import {
     CANCEL_KEY_GENERATION_ID,
     CONFIRM_KEY_GENERATE_ID,
@@ -8,6 +8,9 @@ import {
     NAME_INPUT_SELECTOR, PASS_INPUT_SELECTOR,
     MAIL_PROVIDER_CONTEXT_SELECTOR,
 } from './selectors.mjs';
+import { validateKeyGenInputValue } from './validators.mjs';
+import { ValidatorInputs } from './validators.mjs';
+import { Validators } from './validators.mjs';
 
 
 const STORED_KEYS = {
@@ -21,40 +24,14 @@ let KEYGEN_DATA = {
     passwordInput: '',
 };
 
-const ValidatorInputs = {
-    name: 'NAME',
-    email: 'EMAIL',
-    password: 'PASSWORD',
-};
-
-const Validators = {
-    NAME: value => value !== '',
-    EMAIL: value => {
-        const re =
-            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(value);
-    },
-    PASSWORD: value => value !== '',
-};
-
-function validateKeyGenInputValue(value, type) {
-    if (!Object.hasOwn(Validators, type)) {
-        console.error('Validator not found for validator:', type);
-        return false;
-    }
-    return Validators[type](value);
-}
-
 function enableGenKeys() {
     document.querySelector(CONFIRM_KEY_GENERATE_SELECTOR).disabled = true;
     hideCreateKeysButton();
     document.querySelector(KEY_GEN_GROUP_SELECTOR).classList.remove('hidden');
-    // document.querySelector(IMPORT_KEYS_SECTION_SELECTOR).classList.add('hidden');
 }
 
 function hideGenKeys() {
     document.querySelector(KEY_GEN_GROUP_SELECTOR).classList.add('hidden');
-    // document.querySelector(IMPORT_KEYS_SECTION_SELECTOR).classList.remove('hidden');
     enableCreateKeysButton();
 }
 
@@ -66,6 +43,7 @@ function hideCreateKeysButton() {
     document.querySelector(GENERATE_KEYS_BUTTON_SELECTOR).classList.add('hidden');
 }
 
+
 async function confirmKeyGeneration() {
     const name = KEYGEN_DATA.nameInput;
     const email = KEYGEN_DATA.emailInput;
@@ -75,6 +53,15 @@ async function confirmKeyGeneration() {
 
     await savePrivKeyToStorage(privateKey);
     await savePubKeyToStorage(publicKey);
+
+    const keySet = {
+        name:name,
+        email:email,
+        privateKey:privateKey,
+        publicKey:publicKey
+    }
+
+    await saveKeySetToStore(keySet);
 
     const hiddenElement = document.createElement('a');
     hiddenElement.href = 'data:attachment/text,' + encodeURI(privateKey);
@@ -174,23 +161,14 @@ function checkConfirmButton() {
 browser.tabs
     .executeScript({ file: '/content_scripts/browserActions.mjs' })
     .then(() => {
-        console.log('executing');
         listenForBlur();
         listenForClicks();
     })
     .catch(e => {
-        console.log('Error occured', e);
     });
 
 browser.runtime.onMessage.addListener((request, sender, sendresponse) => {
-    // if (!Object.hasOwn(request, 'dialogStatus') || !Object.hasOwn(request, 'provider')) {
-    //     return;
-    // }
-    console.log('message received');
-    console.log(request);
     const { dialogStatus, provider } = request;
-    console.log(dialogStatus);
-    console.log(provider);
     document.querySelector(MAIL_PROVIDER_CONTEXT_SELECTOR).innerText = `Mail provider: ${provider}`;
     document.querySelector(
         MAIL_CREATE_PROGRESS_SELECTOR,
