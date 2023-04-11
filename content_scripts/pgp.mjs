@@ -6,35 +6,30 @@ export const PRIVATE_KEY_STORAGE_KEY = 'privateKey';
 export const PUBLIC_KEYS_STORE = 'publicKeysStore';
 export const LOADED_KEY_PASSWORD_STORE = 'loadedKeyPassword';
 
-export const PERSONAL_KEYS_STORE = "personalKeysStore";
-
+export const PERSONAL_KEYS_STORE = 'personalKeysStore';
 
 export async function generateKeys(name, email, passphrase) {
-    const { privateKey, publicKey, revocationCertificate } = await openpgp.generateKey({
-        type: 'ecc',
-        curve: 'curve25519',
-        userIDs: [{ name, email }],
-        passphrase,
-        format: 'armored',
+    const { privateKey, publicKey } = await openpgp.generateKey({
+        type: 'rsa', // Type of the key
+        rsaBits: 4096, // RSA key size (defaults to 4096 bits)
+        userIDs: [{ name, email }], // you can pass multiple user IDs
+        passphrase: 'password', // protects the private key
     });
 
-    return {
-        privateKey: privateKey,
-        publicKey: publicKey,
-        revocationCertificate: revocationCertificate,
-    };
+    return { privateKey, publicKey };
 }
 
-export async function getKeySetFromStore(){
+export async function getKeySetFromStore() {
     return await browser.storage.local.get(PERSONAL_KEYS_STORE);
 }
-export async function saveKeySetToStore(keySet){
-    let {personalKeysStore} = await getKeySetFromStore();
-    if(!personalKeysStore){
+
+export async function saveKeySetToStore(keySet) {
+    let { personalKeysStore } = await getKeySetFromStore();
+    if (!personalKeysStore) {
         personalKeysStore = [];
     }
     personalKeysStore.push(keySet);
-    await browser.storage.local.set({personalKeysStore:personalKeysStore});
+    await browser.storage.local.set({ personalKeysStore: personalKeysStore });
 }
 
 export async function storeLoadedKeyPassword(value) {
@@ -45,7 +40,7 @@ export async function storeLoadedKeyPassword(value) {
     await browser.storage.local.set({ loadedKeyPassword: value });
 }
 
-export async function getLoadedKeyPassword(){
+export async function getLoadedKeyPassword() {
     return await browser.storage.local.get(LOADED_KEY_PASSWORD_SELECTOR).loadedKeyPassword;
 }
 
@@ -98,8 +93,9 @@ export async function getReceiverPublicKey(id = 0) {
     }
     return null;
 }
-export async function getReceiverPublicKeys(){
-    const {publicKeysStore} = await browser.storage.local.get(PUBLIC_KEYS_STORE);
+
+export async function getReceiverPublicKeys() {
+    const { publicKeysStore } = await browser.storage.local.get(PUBLIC_KEYS_STORE);
 
     return publicKeysStore;
 }
@@ -117,9 +113,11 @@ export async function parsedPrivateKey(pkStr) {
     return parsedPrivateKey;
 }
 
-export async function encryptMessage(publicKey, privateKey, password, message) {
-    try{
-        const parsedPublicKey = await openpgp.readKey({ armoredKey: publicKey });
+export async function encryptMessage(recepientPublic, privateKey, password, message) {
+    message = message.replace('\n', '');
+
+    try {
+        const parsedPublicKey = await openpgp.readKey({ armoredKey: recepientPublic });
         const parsedPrivateKey = await openpgp.decryptKey({
             privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
             passphrase: password,
@@ -128,18 +126,36 @@ export async function encryptMessage(publicKey, privateKey, password, message) {
         const encrypted = await openpgp.encrypt({
             message: await openpgp.createMessage({ text: message }),
             encryptionKeys: parsedPublicKey,
-            signingKeys: parsedPrivateKey,
-        });
-        const encryptedMessage = await openpgp.readMessage({
-            armoredMessage: encrypted,
+            //            signingKeys: parsedPrivateKey,
         });
         return encrypted;
-        
-    }
-    catch (e){
+    } catch (e) {
         console.error(e);
     }
-
 }
 
-//nesto
+export async function decryptMessage(publicReceiverKey, privateKey, passphrase, encrypted) {
+    try {
+        const message = await openpgp.readMessage({
+            armoredMessage: encrypted, // parse armored message
+        });
+
+        const { data: decrypted } = await openpgp.decrypt({
+            message,
+            //            verificationKeys: await openpgp.readKey({ armoredKey: publicReceiverKey }), // optional
+            decryptionKeys: await openpgp.decryptKey({
+                privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
+                passphrase: 'password',
+            }),
+        });
+        return decrypted;
+    } catch (e) {
+        console.error(e);
+    }
+    // check signature validity (signed messages only)
+    //        try {
+    //            await signatures[0].verified; // throws on invalid signature
+    //        } catch (e) {
+    //            throw new Error('Signature could not be verified: ' + e.message);
+    //        }
+}

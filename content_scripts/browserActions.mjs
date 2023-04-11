@@ -17,6 +17,25 @@
     let getMailContents = () => {
         return document.querySelector('div[aria-label=\'Message Body\']').innerText;
     };
+    let getEncryptedContent = () => {
+        const passing = [];
+        const divs = document.querySelectorAll('div[dir=\'ltr\']').forEach(item => {
+            if (item.innerText.includes('BEGIN PGP MESSAGE')) {
+                passing.push(item);
+            }
+        });
+        return passing[0].innerText;
+    };
+    let setDecryptedContent = (content)=>{
+        console.log("Content to set:",content);
+        const passing = [];
+        const divs = document.querySelectorAll('div[dir=\'ltr\']').forEach(item => {
+            if (item.innerText.includes('BEGIN PGP MESSAGE')) {
+                passing.push(item);
+            }
+        });
+        passing.forEach(element=>element.innerHTML = content)
+    }
     let setMailContents = (content) => {
         return document.querySelector('div[aria-label=\'Message Body\']').innerText = content;
     };
@@ -49,6 +68,14 @@
         }
         if (event.operation === 'GET_PROVIDER') {
             browser.runtime.sendMessage({ dialogStatus: isInProgress, provider: MAIL_PROVIDER });
+        }
+        if (event.operation === 'GET_ENCRYPTED_CONTENT') {
+            browser.runtime.sendMessage({ enc_content: getEncryptedContent() });
+        }
+        if (event.operation === 'SET_DECRYPTED_CONTENT') {
+            console.log("Got decrypted content");
+            console.log(event);
+            setDecryptedContent(event.content);
         }
     });
 })();

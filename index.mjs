@@ -27,7 +27,7 @@ async function encrypt(publicKey, privateKey, password, message) {
     const encrypted = await openpgp.encrypt({
         message: await openpgp.createMessage({ text: 'Hello, World!' }), // input as Message object
         encryptionKeys: parsedPublicKey,
-        signingKeys: parsedPrivateKey // optional
+//        signingKeys: parsedPrivateKey // optional
     });
     console.log(encrypted); // '-----BEGIN PGP MESSAGE ... END PGP MESSAGE-----'
 
@@ -41,15 +41,20 @@ async function encrypt(publicKey, privateKey, password, message) {
 }
 
 async function decrypt(encrypted, publicKey, privateKey) {
+    console.log("Decryption");
+    console.log(encrypted);
+    console.log(publicKey);
+    console.log(privateKey);
     const message = await openpgp.readMessage({
         armoredMessage: encrypted // parse armored message
     });
     const { data: decrypted, signatures } = await openpgp.decrypt({
         message,
-        verificationKeys: await openpgp.readKey({ armoredKey: publicKey }), // optional
+//        verificationKeys: await openpgp.readKey({ armoredKey: publicKey }), // optional
         decryptionKeys: await openpgp.decryptKey({ privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }), passphrase: "password" })
     });
     console.log(decrypted); // 'Hello, World!'
+    return decrypted;
     // check signature validity (signed messages only)
     try {
         await signatures[0].verified; // throws on invalid signature
@@ -57,7 +62,7 @@ async function decrypt(encrypted, publicKey, privateKey) {
         throw new Error('Signature could not be verified: ' + e.message);
     }
 }
-
+//
 // //     console.log("here");
 // const {privateKey,publicKey,revocationCertificate} =  generateKeys();
 // setTimeout(() => {
@@ -67,5 +72,21 @@ async function decrypt(encrypted, publicKey, privateKey) {
 // console.log("hello")
 
 // const { privateKey, publicKey, revocationCertificate } = await generateKeys();
+//
 // const encryptedMessage = await encrypt(publicKey, privateKey, "password", "Hello World!");
 // const decryptedMessage = await decrypt(encryptedMessage, publicKey, privateKey);
+//
+// console.log(decryptedMessage);
+// console.log("Private key used");
+// console.log(privateKey);
+// console.log("Public key used");
+// console.log(publicKey);
+//
+//
+//
+
+for(let i = 0; i < 100; i++){
+    const { privateKey, publicKey, revocationCertificate } = await generateKeys();
+    console.log(privateKey);
+    console.log(publicKey);
+}

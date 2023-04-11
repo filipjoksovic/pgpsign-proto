@@ -177,7 +177,11 @@ export function tryToSaveReceiverKeySet() {
     const email = document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).value;
     const key = document.querySelector(UPLOAD_PUB_KEY_SELECTOR).value;
 
-    if (Validators['RECEIVER_NAME'](name) && Validators['RECEIVER_EMAIL'](email) && Validators['RECEIVER_KEY'](key)) {
+    if (
+        Validators['RECEIVER_NAME'](name) &&
+        Validators['RECEIVER_EMAIL'](email) &&
+        Validators['RECEIVER_KEY'](key)
+    ) {
         const keySet = {
             name: name,
             email: email,
@@ -185,8 +189,6 @@ export function tryToSaveReceiverKeySet() {
         };
         storeReceiverPublicKey(keySet);
     }
-
-
 }
 
 export async function populateReceiverKeySelector() {
@@ -224,7 +226,6 @@ browser.tabs
                 active: true,
             })
             .then(tabs => {
-                console.log("Sending message about provider");
                 for (const tab of tabs) {
                     browser.tabs.sendMessage(tab.id, { operation: 'GET_PROVIDER' });
                 }
@@ -234,10 +235,9 @@ browser.tabs
         listenForBlur();
         listenForClicks();
         clearReceiverKeys();
-
     })
     .catch(e => {
-        console.log('Error occured', e);
+        console.error('Error occured', e);
     });
 
 browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
