@@ -9,31 +9,18 @@
 </head>
 <body class='inactive'>
 <div class='container'>
-    <h1>PgpSign</h1>
+    <div class="d-flex align-center">
+        <a href='../main.html'><img src="../icons/arrow-left-solid.svg" alt="" class = "icon"></a>
+        <h1>PgpSign</h1>
+    </div>
     <p>Sign any email using PGP</p>
 </div>
 <div class='d-flex w-100 align-center justify-center flex-col'>
-    <a href='../main.html'>Go back</a>
-</div>
-<div class='d-flex w-100 align-center justify-center flex-col'>
-    <a href='./keygen.html'>Generate keys</a>
-</div>
-<div class='container'>
-    <p id='providerContext'>Detected provider:</p>
-    <p id='createInProgress'>Create in progress:</p>
 </div>
 <div id='content-wrapper' class='hidden'>
     <div class='container' id='importSection'>
         <h3>Import personal keys</h3>
         <span>Your personal generated keys are stored here.</span>
-        <!--                <div class="d-flex mt-2">-->
-        <!--                    <button id="importPublicKey" class="btn btn-primary flex-grow-1 pointer">-->
-        <!--                        Import public key-->
-        <!--                    </button>-->
-        <!--                    <button id="importPrivateKey" class="btn btn-primary flex-grow-1 pointer">-->
-        <!--                        Import private key-->
-        <!--                    </button>-->
-        <!--                </div>-->
         <div class='d-flex mt-2'>
             <div class='form-group'>
                 <label for='keySetSelector'>Select key pairs</label>

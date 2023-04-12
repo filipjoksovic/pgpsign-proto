@@ -24,10 +24,34 @@ body.active {
     height: 500px;
     width: 500px;
 }
+
 html.keygen,
 body.keygen {
-    height: 300px!important;
+    height: 300px !important;
     width: 500px !important;
+}
+html.decrypt,
+body.decrypt {
+    height: 300px !important;
+    width: 500px !important;
+}
+
+.alert {
+    padding: .7rem .5rem;
+    margin: .5rem 0;
+    border-radius: .3rem;
+
+}
+
+.alert.alert-success {
+    background-color: #59a059;
+    color: #1c3b1c;
+
+}
+
+.alert.alert-error {
+    background-color: #a05959;
+    color: #3b1c1c;
 }
 .container {
     padding: 1rem;
@@ -89,7 +113,7 @@ body.keygen {
 .mt-2 {
     margin-top: 1rem;
 }
-.mb-2{
+.mb-2 {
     margin-bottom: 1rem;
 }
 
@@ -159,15 +183,15 @@ textarea.form-control {
     transition: .4s;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: #2196F3;
 }
 
-input:focus + .slider {
+input:focus+.slider {
     box-shadow: 0 0 1px #2196F3;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     -webkit-transform: translateX(26px);
     -ms-transform: translateX(26px);
     transform: translateX(26px);
@@ -180,4 +204,9 @@ input:checked + .slider:before {
 
 .slider.round:before {
     border-radius: 50%;
+}
+.icon {
+    width: 1.5rem;
+    height: 1.5rem;
+
 }

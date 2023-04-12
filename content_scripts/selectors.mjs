@@ -27,6 +27,8 @@ export const USE_EXISTING_KEYS_ID = "useExistingKeys";
 export const ADD_NEW_RECEIVER_KEYS_ID = "addNewReceiverKeys";
 export const USE_EXISTING_RECEIVER_KEYS_ID = "useExistingReceiverKeys";
 export const EXISTING_KEYS_SELECTOR_ID="existingKeysSelector";
+export const PUBLIC_KEY_SELECTOR_GROUP_ID = 'publicKeySelectorGroup';
+export const PUBLIC_KEY_SELECTOR_ID = 'publicKeySelector';
 
 export const PUB_KEY_GROUP_SELECTOR = `#${PUB_KEY_GROUP_ID}`;
 export const PUB_KEY_INPUT_SELECTOR = `#${PUB_KEY_INPUT_ID}`;
@@ -56,3 +58,5 @@ export const USE_EXISTING_KEYS_SELECTOR = `#${USE_EXISTING_KEYS_ID}`;
 export const ADD_NEW_RECEIVER_KEYS_SELECTOR = `#${ADD_NEW_RECEIVER_KEYS_ID}`;
 export const USE_EXISTING_RECEIVER_KEYS_SELECTOR = `#${USE_EXISTING_RECEIVER_KEYS_ID}`;
 export const EXISTING_KEYS_SELECTOR_SELECTOR = `#${EXISTING_KEYS_SELECTOR_ID}`;
+export const PUBLIC_KEY_SELECTOR_GROUP_SELECTOR = `#${PUBLIC_KEY_SELECTOR_GROUP_ID}`;
+export const PUBLIC_KEY_SELECTOR_SELECTOR = `#${PUBLIC_KEY_SELECTOR_ID}`;

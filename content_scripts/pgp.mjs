@@ -13,7 +13,7 @@ export async function generateKeys(name, email, passphrase) {
         type: 'rsa', // Type of the key
         rsaBits: 4096, // RSA key size (defaults to 4096 bits)
         userIDs: [{ name, email }], // you can pass multiple user IDs
-        passphrase: 'password', // protects the private key
+        passphrase: passphrase, // protects the private key
     });
 
     return { privateKey, publicKey };
@@ -85,8 +85,6 @@ export async function clearReceiverKeys() {
 }
 
 export async function getReceiverPublicKey(id = 0) {
-    // return await browser.storage.local.get(PUBLIC_KEYS_STORE)
-    //TODO fix bugs possible store implementation
     let { publicKeysStore } = await browser.storage.local.get(PUBLIC_KEYS_STORE);
     if (publicKeysStore) {
         return publicKeysStore[1];
@@ -113,6 +111,19 @@ export async function parsedPrivateKey(pkStr) {
     return parsedPrivateKey;
 }
 
+export const parsePrivateKey = async (pkStr, password) => {
+    try {
+        const parsedPrivateKey = await openpgp.decryptKey({
+            privateKey: await openpgp.readPrivateKey({ armoredKey: pkStr }),
+            passphrase: password,
+        });
+        return true;
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
+};
+
 export async function encryptMessage(recepientPublic, privateKey, password, message) {
     message = message.replace('\n', '');
 
@@ -126,7 +137,7 @@ export async function encryptMessage(recepientPublic, privateKey, password, mess
         const encrypted = await openpgp.encrypt({
             message: await openpgp.createMessage({ text: message }),
             encryptionKeys: parsedPublicKey,
-            //            signingKeys: parsedPrivateKey,
+            signingKeys: parsedPrivateKey,
         });
         return encrypted;
     } catch (e) {
@@ -135,6 +146,9 @@ export async function encryptMessage(recepientPublic, privateKey, password, mess
 }
 
 export async function decryptMessage(publicReceiverKey, privateKey, passphrase, encrypted) {
+    if (!encrypted) {
+        return;
+    }
     try {
         const message = await openpgp.readMessage({
             armoredMessage: encrypted, // parse armored message
@@ -142,10 +156,10 @@ export async function decryptMessage(publicReceiverKey, privateKey, passphrase, 
 
         const { data: decrypted } = await openpgp.decrypt({
             message,
-            //            verificationKeys: await openpgp.readKey({ armoredKey: publicReceiverKey }), // optional
+            verificationKeys: await openpgp.readKey({ armoredKey: publicReceiverKey }), // optional
             decryptionKeys: await openpgp.decryptKey({
                 privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
-                passphrase: 'password',
+                passphrase: passphrase,
             }),
         });
         return decrypted;

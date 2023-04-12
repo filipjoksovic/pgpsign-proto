@@ -10,7 +10,11 @@ import {
     getReceiverPublicKey,
     storeLoadedKeyPassword,
     clearReceiverKeys,
-    encryptMessage, getLoadedKeyPassword, getKeySetFromStore, getReceiverPublicKeys,
+    encryptMessage,
+    getLoadedKeyPassword,
+    getKeySetFromStore,
+    getReceiverPublicKeys,
+    parsePrivateKey,
 } from './pgp.mjs';
 import {
     CANCEL_KEY_GENERATION_ID,
@@ -30,7 +34,9 @@ import {
     KEY_SET_SELECTOR_SELECTOR,
     USE_EXISTING_KEYS_ID,
     USE_EXISTING_KEYS_SELECTOR,
-    ADD_NEW_RECEIVER_KEYS_SELECTOR, USE_EXISTING_RECEIVER_KEYS_SELECTOR, EXISTING_KEYS_SELECTOR_SELECTOR,
+    ADD_NEW_RECEIVER_KEYS_SELECTOR,
+    USE_EXISTING_RECEIVER_KEYS_SELECTOR,
+    EXISTING_KEYS_SELECTOR_SELECTOR,
 } from './selectors.mjs';
 import { validateKeyGenInputValue, Validators } from './validators.mjs';
 
@@ -111,27 +117,12 @@ async function parsePrivKey(value) {
 
 //TODO move to keygen
 function listenForBlur() {
-    document.querySelector(PRIV_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
-        parsePrivKey(e.target.value);
-        hidePrivKeyImport();
-    });
-    document.querySelector(PUB_KEY_INPUT_SELECTOR).addEventListener('blur', e => {
-        parsePubKey(e.target.value);
-        hidePubKeyImport();
-    });
-    document.querySelector(UPLOAD_PUB_KEY_SELECTOR).addEventListener('blur', e => {
-//        storeReceiverPublicKey(e.target.value);
-    });
-    document.querySelector(LOADED_KEY_PASSWORD_SELECTOR).addEventListener('blur', e => {
-        storeLoadedKeyPassword(e.target.value);
-    });
     //NEW blurs
     document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).addEventListener('blur', e => {
         if (Validators['RECEIVER_NAME'](e.target.value)) {
             document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add('input-valid');
             document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.remove('input-invalid');
             tryToSaveReceiverKeySet();
-
         } else {
             document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.remove('input-valid');
             document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).classList.add('input-invalid');
@@ -159,6 +150,21 @@ function listenForBlur() {
     document.querySelector(USE_EXISTING_KEYS_SELECTOR).addEventListener('change', e => {
         const isChecked = e.target.checked;
         handleReceiverKeysSection(isChecked);
+    });
+    document.querySelector('#loadedKeyPassword').addEventListener('blur', async e => {
+        const personal = await getSelectedKeySet(selectedKeyId);
+        console.log(personal);
+        const privateKey = personal.privateKey;
+        console.log(privateKey);
+        const result = await parsePrivateKey(privateKey, e.target.value);
+        console.log(result);
+        if (Validators['PASSWORD'](e.target.value) && result) {
+            document.querySelector('#loadedKeyPassword').classList.add('input-valid');
+            document.querySelector('#loadedKeyPassword').classList.remove('input-invalid');
+        } else {
+            document.querySelector('#loadedKeyPassword').classList.remove('input-valid');
+            document.querySelector('#loadedKeyPassword').classList.add('input-invalid');
+        }
     });
 }
 
@@ -192,13 +198,13 @@ export function tryToSaveReceiverKeySet() {
 }
 
 export async function populateReceiverKeySelector() {
-    const keys = await getReceiverPublicKeys();
+    const keys = (await getReceiverPublicKeys()) || [];
     document.querySelector(EXISTING_KEYS_SELECTOR_SELECTOR).addEventListener('blur', e => {
         selectedReceiverKeyId = e.target.value;
     });
     keys.forEach((key, index) => {
         const element = document.createElement('option');
-        element.setAttribute('id', index);
+        element.setAttribute('value', index);
         element.innerText = `${key.name} (${key.email})`;
         document.querySelector(EXISTING_KEYS_SELECTOR_SELECTOR).append(element);
     });
@@ -211,7 +217,7 @@ export async function populateKeySelector() {
     });
     personalKeysStore.forEach((key, index) => {
         const element = document.createElement('option');
-        element.setAttribute('id', index);
+        element.setAttribute('value', index);
         element.innerText = `${key.name} (${key.email})`;
         document.querySelector(KEY_SET_SELECTOR_SELECTOR).append(element);
     });
@@ -244,12 +250,6 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
     const { dialogStatus, provider } = request;
     const { content } = request;
     if (dialogStatus && provider) {
-        document.querySelector(
-            MAIL_PROVIDER_CONTEXT_SELECTOR,
-        ).innerText = `Mail provider: ${provider}`;
-        document.querySelector(
-            MAIL_CREATE_PROGRESS_SELECTOR,
-        ).innerText = `Is writing email: ${dialogStatus}`;
         if (dialogStatus) {
             enableAppFunctionality();
         } else {
@@ -259,14 +259,19 @@ browser.runtime.onMessage.addListener(async (request, sender, sendresponse) => {
     }
     if (content) {
         const personal = await getSelectedKeySet(selectedKeyId);
+        console.log('Selected keySet');
+        console.log(personal);
         const personalPrivateKey = personal.privateKey;
         const receiver = await getSelectedReceiverKeySet(selectedReceiverKeyId); //await getReceiverPublicKey();
+        console.log('Selected receiver keySet');
+        console.log(receiver);
+        const password = document.querySelector('#loadedKeyPassword').value;
         const receiverPublicKey = receiver.publicKey;
         try {
             const encryptedMail = await encryptMessage(
                 receiverPublicKey,
                 personalPrivateKey,
-                'password',
+                password,
                 content,
             );
 
@@ -298,10 +303,15 @@ export async function getSelectedKeySet(selectedId = 0) {
 }
 
 export async function getSelectedReceiverKeySet(selectedId = 0) {
+    console.log('Selected id');
+    console.log(selectedId);
     if (selectedId < 0) {
         selectedId = 0;
     }
     const storedReceivers = await getReceiverPublicKeys();
+    console.log('Stored receivers');
+    console.log(storedReceivers);
+    console.log(storedReceivers[selectedId]);
     return storedReceivers[selectedId];
 }
 

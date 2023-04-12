@@ -55,26 +55,38 @@ async function confirmKeyGeneration() {
     await savePubKeyToStorage(publicKey);
 
     const keySet = {
-        name:name,
-        email:email,
-        privateKey:privateKey,
-        publicKey:publicKey
+        name: name,
+        email: email,
+        privateKey: privateKey,
+        publicKey: publicKey,
+    };
+
+    try {
+        await saveKeySetToStore(keySet);
+        document.querySelector('#successAlert').classList.remove('hidden');
+        setTimeout(() => {
+            document.querySelector('#successAlert').classList.add('hidden');
+        }, 5000);
+    } catch (e) {
+        console.error(e);
+        document.querySelector('#errorAlert').classList.remove('hidden');
+        setTimeout(() => {
+            document.querySelector('#errorAlert').classList.add('hidden');
+        }, 5000);
     }
 
-    await saveKeySetToStore(keySet);
-
-    const hiddenElement = document.createElement('a');
-    hiddenElement.href = 'data:attachment/text,' + encodeURI(privateKey);
-    hiddenElement.target = '_blank';
-    hiddenElement.download = 'privateKey.priv';
-    hiddenElement.click();
-    const hiddenElementPub = document.createElement('a');
-    hiddenElementPub.href = 'data:attachment/text,' + encodeURI(publicKey);
-    hiddenElementPub.target = '_blank';
-    hiddenElementPub.download = 'publicKey.pub';
-    hiddenElementPub.click();
-    STORED_KEYS.privateKey = privateKey;
-    STORED_KEYS.publicKey = publicKey;
+    // const hiddenElement = document.createElement('a');
+    // hiddenElement.href = 'data:attachment/text,' + encodeURI(privateKey);
+    // hiddenElement.target = '_blank';
+    // hiddenElement.download = 'privateKey.priv';
+    // // hiddenElement.click();
+    // const hiddenElementPub = document.createElement('a');
+    // hiddenElementPub.href = 'data:attachment/text,' + encodeURI(publicKey);
+    // hiddenElementPub.target = '_blank';
+    // hiddenElementPub.download = 'publicKey.pub';
+    // // hiddenElementPub.click();
+    // STORED_KEYS.privateKey = privateKey;
+    // STORED_KEYS.publicKey = publicKey;
 }
 
 function listenForBlur() {
@@ -164,18 +176,5 @@ browser.tabs
         listenForBlur();
         listenForClicks();
     })
-    .catch(e => {
-    });
+    .catch(e => {});
 
-browser.runtime.onMessage.addListener((request, sender, sendresponse) => {
-    const { dialogStatus, provider } = request;
-    document.querySelector(MAIL_PROVIDER_CONTEXT_SELECTOR).innerText = `Mail provider: ${provider}`;
-    document.querySelector(
-        MAIL_CREATE_PROGRESS_SELECTOR,
-    ).innerText = `Is writing email: ${dialogStatus}`;
-    if (dialogStatus) {
-        // enableAppFunctionality();
-    } else {
-        // disableAppFunctionality();
-    }
-});
