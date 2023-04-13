@@ -32,7 +32,7 @@ body.keygen {
 }
 html.decrypt,
 body.decrypt {
-    height: 300px !important;
+    height: 400px !important;
     width: 500px !important;
 }
 

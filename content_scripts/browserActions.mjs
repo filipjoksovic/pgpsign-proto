@@ -34,9 +34,7 @@
                 passing.push(item);
             }
         });
-        passing.forEach(
-            element => (element.innerHTML = content.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')),
-        );
+        passing.forEach(element => (element.innerHTML = content.replace(/\n/g, '<br>')));
     }
     let setMailContents = (content) => {
         return document.querySelector('div[aria-label=\'Message Body\']').innerText = content;

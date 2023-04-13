@@ -2,6 +2,7 @@ import {
     decryptMessage,
     getKeySetFromStore,
     getReceiverPublicKeys,
+    getUserFromPrivKey,
     getUserFromSignature,
 } from './pgp.mjs';
 import { PUBLIC_KEY_SELECTOR_SELECTOR } from './selectors.mjs';
@@ -36,6 +37,12 @@ export async function listenForChanges() {
         const privateKey = (await getKeySetFromStore()).personalKeysStore[selectedKey].privateKey;
         console.log(privateKey);
     });
+    document.querySelector('#senderPublic').addEventListener('change', async e => {
+        const selectedKey = e.target.value;
+        console.log(selectedKey);
+        const publicKey = (await getReceiverPublicKeys())[selectedKey].publicKey;
+        console.log(publicKey);
+    });
 }
 
 export async function listenForBlur() {
@@ -44,8 +51,10 @@ export async function listenForBlur() {
     });
     document.querySelector('#decryptContent').addEventListener('click', async e => {
         const selectedKey = document.querySelector(PUBLIC_KEY_SELECTOR_SELECTOR).value;
+        const selectedPublicKey = document.querySelector('#senderPublic').value;
         const privateKey = (await getKeySetFromStore()).personalKeysStore[selectedKey].privateKey;
-        const publicKey = (await getReceiverPublicKeys())[0].publicKey;
+        const publicKey = (await getKeySetFromStore()).personalKeysStore[selectedPublicKey]
+            .publicKey;
         inputted_password = document.querySelector('#publicKeyPasswordInput').value;
         decryptContent(publicKey, privateKey, inputted_password);
     });
@@ -67,6 +76,20 @@ export async function loadKeys() {
         select.appendChild(option);
         counter++;
     }
+
+    const select2 = document.querySelector('#senderPublic');
+    //remove all children
+    while (select2.firstChild) {
+        select2.removeChild(select2.firstChild);
+    }
+    let counter2 = 0;
+    for (const key of await personalKeysStore) {
+        const option = document.createElement('option');
+        option.value = counter2;
+        option.text = key.name + ' ' + key.email;
+        select2.appendChild(option);
+        counter2++;
+    }
 }
 
 export async function decryptContent(publicKey, privateKey, password) {
@@ -74,12 +97,13 @@ export async function decryptContent(publicKey, privateKey, password) {
     console.log(decrypted);
     const user = await getUserFromSignature(publicKey);
     console.log(user);
+    console.log(await getUserFromPrivKey(privateKey, password));
     //replace \n with <br> and remove " from string
     decrypted = decrypted.replace(/\\n/g, '<br>');
     decrypted = decrypted.replace(/"/g, '');
-    decrypted += '<br>';
-    decrypted += '<h3>Signed by</h3>';
-    decrypted += '<p>' + user.name + ' (' + user.email + ')</p>';
+    decrypted += `
+    <div style = "padding: .5rem 1rem; background-color: #f5f5f5; border-radius: 5px; margin-top: 1rem; border: 1px solid #e7e7e7">
+            <h3>Signed by</h3><p>${user.name} (${user.email})</p></div>`;
 
     if (decrypted) {
         browser.tabs

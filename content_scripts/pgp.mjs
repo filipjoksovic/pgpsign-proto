@@ -149,6 +149,15 @@ export async function getUserFromSignature(publicKey) {
     console.log(users);
     return users;
 }
+export async function getUserFromPrivKey(privateKey, password) {
+    const key = await openpgp.decryptKey({
+        privateKey: await openpgp.readPrivateKey({ armoredKey: privateKey }),
+        passphrase: password,
+    });
+    const users = key.users[0].userID;
+    console.log(users);
+    return users;
+}
 
 export async function decryptMessage(publicReceiverKey, privateKey, passphrase, encrypted) {
     if (!encrypted) {

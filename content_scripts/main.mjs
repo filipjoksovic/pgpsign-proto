@@ -178,7 +178,7 @@ export function handleReceiverKeysSection(selectActive) {
     }
 }
 
-export function tryToSaveReceiverKeySet() {
+export async function tryToSaveReceiverKeySet() {
     const name = document.querySelector(RECEIVER_NAME_INPUT_SELECTOR).value;
     const email = document.querySelector(RECEIVER_NAME_EMAIL_SELECTOR).value;
     const key = document.querySelector(UPLOAD_PUB_KEY_SELECTOR).value;
@@ -193,7 +193,8 @@ export function tryToSaveReceiverKeySet() {
             email: email,
             publicKey: key,
         };
-        storeReceiverPublicKey(keySet);
+        await storeReceiverPublicKey(keySet);
+        selectedReceiverKeyId = (await getReceiverPublicKeys().length) - 1;
     }
 }
 
@@ -308,7 +309,11 @@ export async function getSelectedReceiverKeySet(selectedId = 0) {
     if (selectedId < 0) {
         selectedId = 0;
     }
+    
     const storedReceivers = await getReceiverPublicKeys();
+    if (selectedId === NaN) {
+        selectedId = storedReceivers.length - 1;
+    }
     console.log('Stored receivers');
     console.log(storedReceivers);
     console.log(storedReceivers[selectedId]);
