@@ -125,8 +125,6 @@ export const parsePrivateKey = async (pkStr, password) => {
 };
 
 export async function encryptMessage(recepientPublic, privateKey, password, message) {
-    message = message.replace('\n', '');
-
     try {
         const parsedPublicKey = await openpgp.readKey({ armoredKey: recepientPublic });
         const parsedPrivateKey = await openpgp.decryptKey({
@@ -145,6 +143,13 @@ export async function encryptMessage(recepientPublic, privateKey, password, mess
     }
 }
 
+export async function getUserFromSignature(publicKey) {
+    const key = await openpgp.readKey({ armoredKey: publicKey });
+    const users = key.users[0].userID;
+    console.log(users);
+    return users;
+}
+
 export async function decryptMessage(publicReceiverKey, privateKey, passphrase, encrypted) {
     if (!encrypted) {
         return;
@@ -153,8 +158,8 @@ export async function decryptMessage(publicReceiverKey, privateKey, passphrase, 
         const message = await openpgp.readMessage({
             armoredMessage: encrypted, // parse armored message
         });
-
-        const { data: decrypted } = await openpgp.decrypt({
+        console.log(publicReceiverKey);
+        const { data: decrypted, signatures } = await openpgp.decrypt({
             message,
             verificationKeys: await openpgp.readKey({ armoredKey: publicReceiverKey }), // optional
             decryptionKeys: await openpgp.decryptKey({
@@ -162,14 +167,15 @@ export async function decryptMessage(publicReceiverKey, privateKey, passphrase, 
                 passphrase: passphrase,
             }),
         });
+        console.log(signatures);
+        // check signature validity (signed messages only)
+        // try {
+        //     await signatures[0].verified; // throws on invalid signature
+        // } catch (e) {
+        //     throw new Error('Signature could not be verified: ' + e.message);
+        // }
         return decrypted;
     } catch (e) {
         console.error(e);
     }
-    // check signature validity (signed messages only)
-    //        try {
-    //            await signatures[0].verified; // throws on invalid signature
-    //        } catch (e) {
-    //            throw new Error('Signature could not be verified: ' + e.message);
-    //        }
 }

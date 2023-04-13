@@ -1,4 +1,9 @@
-import { decryptMessage, getKeySetFromStore, getReceiverPublicKeys } from './pgp.mjs';
+import {
+    decryptMessage,
+    getKeySetFromStore,
+    getReceiverPublicKeys,
+    getUserFromSignature,
+} from './pgp.mjs';
 import { PUBLIC_KEY_SELECTOR_SELECTOR } from './selectors.mjs';
 
 let encrypted_message = '';
@@ -65,8 +70,17 @@ export async function loadKeys() {
 }
 
 export async function decryptContent(publicKey, privateKey, password) {
-    const decrypted = await decryptMessage(publicKey, privateKey, password, encrypted_message);
+    let decrypted = await decryptMessage(publicKey, privateKey, password, encrypted_message);
     console.log(decrypted);
+    const user = await getUserFromSignature(publicKey);
+    console.log(user);
+    //replace \n with <br> and remove " from string
+    decrypted = decrypted.replace(/\\n/g, '<br>');
+    decrypted = decrypted.replace(/"/g, '');
+    decrypted += '<br>';
+    decrypted += '<h3>Signed by</h3>';
+    decrypted += '<p>' + user.name + ' (' + user.email + ')</p>';
+
     if (decrypted) {
         browser.tabs
             .query({
